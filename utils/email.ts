@@ -23,12 +23,12 @@ export const sendVerificationLinkToOwner = async (
   await transporter.sendMail({
     from: `"Maximal Security " <${process.env.EMAIL_USER}>`,
     to: process.env.OWNER_EMAIL,
-    subject: "🚨 New Signup Pending Verification",
+    subject: "New Signup Pending Verification",
     html: `
       <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; background-color: #f8f9fa;">
         <h2 style="color: #004175;">Hello Admin,</h2>
 
-        <p>A new Account has registered on <strong>Maximal Security Swiped App</strong> and is awaiting your verification:</p>
+        <p>A new account has registered on <strong>Maximal Security Visitor Management App</strong> and is awaiting your verification:</p>
 
         <table style="margin-top: 10px; margin-bottom: 20px;">
           <tr>
@@ -55,7 +55,7 @@ export const sendVerificationLinkToOwner = async (
           If you did not expect this email or believe it was sent in error, please ignore it.
         </p>
 
-        <p style="font-size: 13px; margin-top: 20px;">— Maximal Security Swiped Team</p>
+        <p style="font-size: 13px; margin-top: 20px;">— Maximal Security Team</p>
       </div>
     `,
   });
@@ -88,7 +88,7 @@ export const sendVerificationLinkToUser = async (
           If you did not expect this email, please ignore it.
         </p>
 
-        <p style="font-size: 13px; margin-top: 20px;">— Maximal Security Swiped Team</p>
+        <p style="font-size: 13px; margin-top: 20px;">— Maximal Security Team</p>
       </div>
     `,
   });

@@ -152,6 +152,7 @@ const SignInNotificationsInput = new GraphQLInputObjectType({
   name: "SignInNotificationsInput",
   fields: () => ({
     enabled: { type: GraphQLBoolean },
+    includeAllVisitorResponses: { type: GraphQLBoolean },
     recipients: { type: new GraphQLList(SignInNotificationRecipientInput) },
   }),
 });

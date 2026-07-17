@@ -263,6 +263,7 @@ export const SignInNotificationsType = new GraphQLObjectType({
   name: "SignInNotificationsType",
   fields: () => ({
     enabled: { type: GraphQLBoolean },
+    includeAllVisitorResponses: { type: GraphQLBoolean },
     recipients: { type: new GraphQLList(SignInNotificationRecipientType) },
   }),
 });

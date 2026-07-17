@@ -119,6 +119,10 @@ const OfficeLocationSchema = new Schema(
         type: Boolean,
         default: false,
       },
+      includeAllVisitorResponses: {
+        type: Boolean,
+        default: false,
+      },
       recipients: [
         {
           email: { type: String },

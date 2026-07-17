@@ -3,9 +3,9 @@ import { UserModel } from "../../../../database/models/user";
 
 export default async (_, args) => {
   try {
-    const { email, otp, password } = args;
+    const { email, password } = args;
 
-    // 1. Find user
+    // 1. Find user (OTP was already verified in the verify-OTP step)
     const user = await UserModel.findOne({ email });
     if (!user) {
       return {
@@ -16,26 +16,7 @@ export default async (_, args) => {
       };
     }
 
-    // 2. Verify OTP
-    if (!user.otp || user.otp !== otp) {
-      return {
-        error: {
-          message: "Invalid OTP.",
-          code: "INVALID_OTP",
-        },
-      };
-    }
-
-    if (user.otpExpiry < Date.now()) {
-      return {
-        error: {
-          message: "OTP has expired.",
-          code: "OTP_EXPIRED",
-        },
-      };
-    }
-
-    // 3. Hash new password and clear OTP
+    // 2. Hash new password and clear any leftover OTP state
     const hashedPassword = await bcrypt.hash(password, 10);
     user.password = hashedPassword;
     user.otp = undefined;

@@ -65,15 +65,6 @@ export default async (_, args: MutationSignupArgs) => {
     };
   }
 
-  const companyExist = await CompanyModel.findOne({ name: companyName }).lean();
-  if (companyExist) {
-    return {
-      error: {
-        message: "Company Name already exists",
-        code: "COMPANY_EXIST",
-      },
-    };
-  }
   const location = await OfficeLocationModel.create({ name: "Head Office" });
 
   const createCompany = await CompanyModel.create({
@@ -123,7 +114,7 @@ export default async (_, args: MutationSignupArgs) => {
 
   await sendVerificationLinkToOwner(
     savedUser._id.toString(),
-    savedUser.firstName,
+    `${savedUser.firstName ?? ""} ${savedUser.lastName ?? ""}`.trim(),
     savedUser.email,
     companyName,
   );
