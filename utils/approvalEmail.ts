@@ -74,7 +74,7 @@ New visitor <span style="font-weight: bold;">${visitorName}</span> requires appr
 
           <p style="margin: 25px 0 0; font-size: 14px; color: #777;">
             Thanks<br />
-            FrontDesk, Head Office
+            Front Desk, Head Office
           </p>
         </td>
       </tr>
