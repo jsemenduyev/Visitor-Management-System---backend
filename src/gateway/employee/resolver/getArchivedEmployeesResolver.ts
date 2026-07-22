@@ -5,8 +5,14 @@ export default async (args: { search?: string; limit?: number; offset?: number }
     const { search, limit = 10, offset = 0 } = args;
     const { user } = ctx;
 
+    let companyId = user?.company;
+    if (!companyId && user?._id) {
+      const dbUser = await UserModel.findById(user._id).select("company").lean();
+      companyId = dbUser?.company;
+    }
+
     const query: any = {
-      company: user.company,
+      company: companyId,
       isArchived: true,
     };
 
@@ -18,8 +24,6 @@ export default async (args: { search?: string; limit?: number; offset?: number }
     }
 
     const users = await UserModel.find(query)
-      .populate("department")
-      .populate("location")
       .skip(offset)
       .limit(limit)
       .sort({ archivedAt: -1 })
@@ -29,11 +33,6 @@ export default async (args: { search?: string; limit?: number; offset?: number }
 
     return { user: users, count };
   } catch (error: any) {
-    return {
-      error: {
-        message: error.message || "Something went wrong",
-        code: "INTERNAL_SERVER_ERROR",
-      },
-    };
+    throw new Error(error.message || "Failed to fetch archived employees");
   }
 };
