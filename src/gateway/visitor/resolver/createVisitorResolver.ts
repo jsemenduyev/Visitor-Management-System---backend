@@ -167,7 +167,8 @@ export default async (_: any, args: MutationCreateVisitorArgs) => {
       company: category.company,
       employees,
       signedType: category.approval ? "Pending" : "In",
-      ...(category.approval ? {} : { signedIn: new Date().toISOString() }),
+      // Client-provided ISO datetime (online: now; offline sync: original local time)
+      signedIn: input.signedIn,
     };
 
     const visitor = await VisitorModel.create(newInput);

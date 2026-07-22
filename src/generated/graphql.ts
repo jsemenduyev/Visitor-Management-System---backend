@@ -1612,6 +1612,7 @@ export type VisitorInput = {
   location: Scalars['ID']['input'];
   remembered?: InputMaybe<Scalars['Boolean']['input']>;
   selectedAgreement?: InputMaybe<VisitorInputAgreement>;
+  signedIn: Scalars['String']['input'];
   signedInDevice?: InputMaybe<DeviceType>;
   signedOutDevice?: InputMaybe<DeviceType>;
   signedType?: InputMaybe<Scalars['String']['input']>;
