@@ -20,8 +20,8 @@ export default async (args: MutationDeleteEmployeeArgs, ctx) => {
     if (user.role === "admin") {
       return {
         error: {
-          message: "Admin can't be deleted",
-          code: "DELETE_ERROR",
+          message: "Admin accounts can't be archived",
+          code: "ARCHIVE_ERROR",
         },
       };
     }

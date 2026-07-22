@@ -5,19 +5,24 @@ export default async (args: QueryGetUsersArgs, ctx) => {
   try {
     const { search, limit = 10, offset = 0, sorted, location, role } = args; // default values
     const { user } = ctx;
+
+    let companyId = user?.company;
+    if (!companyId && user?._id) {
+      const dbUser = await UserModel.findById(user._id).select("company").lean();
+      companyId = dbUser?.company;
+    }
+
     // Build search query
-    let query: any = {
-      company: user.company,
+    const query: any = {
+      company: companyId,
       isArchived: { $ne: true },
     };
     let sort = {};
     if (search && search.trim() !== "") {
-      query = {
-        $or: [
-          { firstName: { $regex: search, $options: "i" } },
-          { email: { $regex: search, $options: "i" } },
-        ],
-      };
+      query.$or = [
+        { firstName: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+      ];
     }
     if (location) {
       query.location = location;

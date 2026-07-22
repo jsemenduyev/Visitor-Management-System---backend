@@ -20,6 +20,9 @@ export const VisitorInput = new GraphQLInputObjectType({
     remembered: {
       type: GraphQLBoolean,
     },
+    signedIn: {
+      type: new GraphQLNonNull(GraphQLString),
+    },
     signedInDevice: {
       type: DeviceType,
     },
