@@ -35,7 +35,7 @@ const corsOptions: CorsOptions = {
     }
 
     const allowedOrigins = [
-      // "https://swipedmax-website.vercel.app",
+       "https://swipedmax-website.vercel.app",
       "http://localhost:3000", // Uncomment for local development
     ];
 
