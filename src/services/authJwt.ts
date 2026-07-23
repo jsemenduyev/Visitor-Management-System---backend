@@ -11,7 +11,20 @@ type JwtUserPayload = {
 };
 
 const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
-const JWT_EXPIRY = process.env.JWT_EXPIRY || "7d";
+
+/** Normalize expiry: bare numbers are treated as seconds; prefer values like "7d", "12h". */
+const resolveJwtExpiry = (): string | number => {
+  const raw = (process.env.JWT_EXPIRY || "7d").trim();
+  if (!raw) return "7d";
+  // Reject tiny bare numbers that ms() would treat as milliseconds (e.g. "2" → 2ms)
+  if (/^\d+$/.test(raw)) {
+    const seconds = Number(raw);
+    return seconds < 60 ? "7d" : seconds;
+  }
+  return raw;
+};
+
+const JWT_EXPIRY = resolveJwtExpiry();
 
 export const signToken = (user: JwtUserPayload): string => {
   return jwt.sign(
@@ -24,7 +37,7 @@ export const signToken = (user: JwtUserPayload): string => {
       },
     },
     JWT_SECRET,
-    { expiresIn: JWT_EXPIRY }
+    { expiresIn: JWT_EXPIRY as jwt.SignOptions["expiresIn"] }
   );
 };
 

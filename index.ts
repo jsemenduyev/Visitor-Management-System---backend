@@ -21,10 +21,13 @@ const httpServer = http.createServer(app);
 
 const PORT = Number(process.env.PORT) || 3000;
 
-const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? "")
-  .split(",")
-  .map((origin) => origin.trim().replace(/\/$/, ""))
-  .filter(Boolean);
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "https://swiped-dash.vercel.app",
+  "https://swipedmax-website.vercel.app",
+  "https://swiped-visit-us.vercel.app",
+];
 
 console.log("Allowed CORS origins:", allowedOrigins);
 const corsOptions: CorsOptions = {
@@ -34,12 +37,8 @@ const corsOptions: CorsOptions = {
       return callback(null, true);
     }
 
-    const allowedOrigins = [
-       "https://swipedmax-website.vercel.app",
-      "http://localhost:3000", // Uncomment for local development
-    ];
-
-    if (allowedOrigins.includes(origin)) {
+    const normalized = origin.replace(/\/$/, "");
+    if (allowedOrigins.includes(normalized)) {
       return callback(null, true);
     }
 
