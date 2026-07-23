@@ -27,41 +27,20 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? "")
   .filter(Boolean);
 
 console.log("Allowed CORS origins:", allowedOrigins);
-
 const corsOptions: CorsOptions = {
-  origin: (origin, callback) => {
-
-    if (!origin) {
-      callback(null, true);
-      return;
-    }
-
-    const normalizedOrigin = origin.trim().replace(/\/$/, "");
-
-    if (allowedOrigins.includes(normalizedOrigin)) {
-      callback(null, true);
-      return;
-    }
-
-    console.error(`CORS blocked origin: ${origin}`);
-    console.error("Configured origins:", allowedOrigins);
-
-    callback(new Error(`Origin ${origin} is not allowed by CORS`));
-  },
-
+  origin: "*",
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-
   allowedHeaders: [
     "Content-Type",
     "Authorization",
     "Apollo-Require-Preflight",
     "X-Apollo-Operation-Name",
   ],
-
-  credentials: true,
-  optionsSuccessStatus: 204,
+  credentials: false,
 };
 
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 app.use(cors(corsOptions));
 
 app.options("/graphql", cors(corsOptions));
