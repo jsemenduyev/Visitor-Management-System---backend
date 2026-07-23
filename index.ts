@@ -28,23 +28,39 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? "")
 
 console.log("Allowed CORS origins:", allowedOrigins);
 const corsOptions: CorsOptions = {
-  origin: "*",
+  origin: (origin, callback) => {
+    // Allow requests with no Origin (Postman, curl, mobile apps, etc.)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    const allowedOrigins = [
+      "https://swipedmax-website.vercel.app",
+      // "http://localhost:5173", // Uncomment for local development
+    ];
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`Origin ${origin} is not allowed by CORS`));
+  },
+
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+
   allowedHeaders: [
     "Content-Type",
     "Authorization",
     "Apollo-Require-Preflight",
     "X-Apollo-Operation-Name",
   ],
-  credentials: false,
+
+  credentials: true,
+  optionsSuccessStatus: 204,
 };
 
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
-app.use(cors(corsOptions));
-
-app.options("/graphql", cors(corsOptions));
-
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
