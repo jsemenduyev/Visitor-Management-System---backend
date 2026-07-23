@@ -44,15 +44,15 @@ const DeviceSchema = new Schema({
   visitorNotifications: {
     checkIn: {
       type: String,
-      default: "Visitor Sign In Successfully",
+      default: "Visitor Signed In Successfully",
     },
     checkOut: {
       type: String,
-      default: "Visitor Sign Out Successfully",
+      default: "Visitor Signed Out Successfully",
     },
     checkInPending: {
       type: String,
-      default: "Your Sign In Request is being reviewed",
+      default: "Your Signed In Request is being reviewed",
     },
   },
 });
