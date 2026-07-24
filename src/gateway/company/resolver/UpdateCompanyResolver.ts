@@ -37,7 +37,9 @@ export default async (args: MutationUpdateCompanyArgs, ctx: any) => {
       if (!existing?.contactLess?.token) {
         const token = crypto.randomBytes(16).toString("hex");
 
-        const visitorUrl = `${process.env.FRONTEND_URL}/visit-us?token=${token}`;
+        const base =
+          process.env.CONTACTLESS_URL || process.env.FRONTEND_URL;
+        const visitorUrl = `${base}/visit-us?token=${token}`;
 
         const qrDataUrl = await QRCode.toDataURL(visitorUrl, {
           errorCorrectionLevel: "H",

@@ -1,17 +1,26 @@
-import { SelectedAgreement } from "./../generated/graphql";
 import express from "express";
-import { CompanyModel } from "../../database/models/company";
+import OfficeLocationModel from "../../database/models/officelocations";
 import visitorCategory from "../../database/models/visitorCategory";
 import { AgreementModel } from "../../database/models/agreements";
 import { UserModel } from "../../database/models/user";
 import PreRegisterVisitorModel from "../../database/models/preRegisterVisitor";
 import VisitorModel from "../../database/models/visitor";
+import DepartmentModel from "../../database/models/department";
 import { sendVisitorArrivalEmail } from "../../utils/VisitorEmail";
 import { sendVisitorApprovalEmail } from "../../utils/approvalEmail";
 import { sendTwilioMessage } from "./sendMessage";
 import { Types } from "mongoose";
 
 const visitUsRouter = express.Router();
+
+const findLocationByToken = async (token: unknown) => {
+  if (!token || typeof token !== "string") return null;
+  return OfficeLocationModel.findOne({
+    "contactLess.token": token,
+    "contactLess.enabled": true,
+  }).lean();
+};
+
 visitUsRouter.get("/verifyToken", async (req, res) => {
   try {
     const { token } = req.query;
@@ -20,15 +29,30 @@ visitUsRouter.get("/verifyToken", async (req, res) => {
       return res.status(400).json({ message: "Token is required" });
     }
 
-    const company = await CompanyModel.findOne({
-      "contactLess.token": token,
-    });
+    const location = await findLocationByToken(token);
 
-    if (!company) {
+    if (!location) {
       return res.status(401).json({ message: "Invalid token" });
     }
 
-    res.json(company);
+    res.json({
+      _id: location._id,
+      id: location._id,
+      name: location.name,
+      company: location.company,
+      customHeading: location.customHeading,
+      visitorPhoto: location.visitorPhoto,
+      selectHost: location.selectHost,
+      returningVisitors: location.returningVisitors,
+      selectedAgreement: location.selectedAgreement,
+      agreements: location.agreements,
+      branding: location.branding,
+      visitorButton: location.visitorButton,
+      savedImgs: location.savedImgs,
+      contactLess: {
+        enabled: location.contactLess?.enabled,
+      },
+    });
   } catch (error) {
     console.error("Token Verification Error:", error);
     res.status(500).json({ message: "Server error" });
@@ -43,19 +67,24 @@ visitUsRouter.get("/categories", async (req, res) => {
       return res.status(400).json({ message: "Token is required" });
     }
 
-    const company = await CompanyModel.findOne({
-      "contactLess.token": token,
-    });
+    const location = await findLocationByToken(token);
 
-    if (!company) {
+    if (!location) {
       return res.status(401).json({ message: "Invalid token" });
     }
 
-    const categories = await visitorCategory.find({ company: company._id });
+    const categories = await visitorCategory
+      .find({
+        company: location.company,
+        location: location._id,
+        enabled: true,
+      })
+      .sort({ priority: 1 })
+      .lean();
 
     res.json(categories);
   } catch (error) {
-    console.error("Get Fields Error:", error);
+    console.error("Get Categories Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -68,14 +97,26 @@ visitUsRouter.get("/agreement", async (req, res) => {
       return res.status(400).json({ message: "Token is required" });
     }
 
-    const company = await CompanyModel.findOne({
-      "contactLess.token": token,
-    });
+    if (!selectedAgreement || typeof selectedAgreement !== "string") {
+      return res.status(400).json({ message: "selectedAgreement is required" });
+    }
 
-    if (!company) {
+    const location = await findLocationByToken(token);
+
+    if (!location) {
       return res.status(401).json({ message: "Invalid token" });
     }
-    const agreement = await AgreementModel.findById({ _id: selectedAgreement });
+
+    const allowedIds = [
+      ...(location.agreements || []).map((id: any) => id.toString()),
+      location.selectedAgreement?.agreement?.toString(),
+    ].filter(Boolean);
+
+    if (!allowedIds.includes(selectedAgreement)) {
+      return res.status(403).json({ message: "Agreement not allowed for this location" });
+    }
+
+    const agreement = await AgreementModel.findById(selectedAgreement).lean();
     if (!agreement) {
       return res.status(404).json({ message: "Agreement not found" });
     }
@@ -86,6 +127,7 @@ visitUsRouter.get("/agreement", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
 visitUsRouter.get("/departments", async (req, res) => {
   try {
     const { token, search } = req.query;
@@ -94,91 +136,151 @@ visitUsRouter.get("/departments", async (req, res) => {
       return res.status(400).json({ message: "Token is required" });
     }
 
-    const company = await CompanyModel.findOne({
-      "contactLess.token": token,
-    });
+    const location = await findLocationByToken(token);
 
-    if (!company) {
+    if (!location) {
       return res.status(401).json({ message: "Invalid token" });
     }
-    const employee = await UserModel.find({
-      company: company._id,
-      firstName: { $regex: search, $options: "i" },
-    }).lean();
 
-    res.json(employee);
+    const searchStr = typeof search === "string" ? search.trim() : "";
+    const filter: Record<string, any> = {
+      company: location.company,
+    };
+
+    if (searchStr) {
+      filter.name = { $regex: searchStr, $options: "i" };
+    }
+
+    const departments = await DepartmentModel.find(filter)
+      .select("_id name")
+      .limit(30)
+      .lean();
+
+    res.json(departments);
   } catch (error) {
-    console.error("Get Agreement Error:", error);
+    console.error("Get Departments Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
+
 visitUsRouter.post("/submitVisitor", async (req, res) => {
   try {
     const { token } = req.query;
-
-    const input = req.body;
+    const input = req.body || {};
 
     if (!token) {
       return res.status(400).json({ message: "Token is required" });
     }
 
-    const company = await CompanyModel.findOne({
-      "contactLess.token": token,
-    });
+    const location = await findLocationByToken(token);
 
-    if (!company) {
+    if (!location) {
       return res.status(401).json({ message: "Invalid token" });
     }
+
     if (input.data?.fullName) {
       await PreRegisterVisitorModel.findOneAndDelete({
         "data.fullName": input.data.fullName,
       });
     }
 
-    // ✅ Prevent duplicate signed-in visitors based on phone or email
     const duplicateConditions: any[] = [];
-    if (input.data?.phoneNumber) duplicateConditions.push({ "data.phoneNumber": input.data.phoneNumber });
-    if (input.data?.emailAddress) duplicateConditions.push({ "data.emailAddress": input.data.emailAddress });
+    if (input.data?.phoneNumber) {
+      duplicateConditions.push({ "data.phoneNumber": input.data.phoneNumber });
+    }
+    if (input.data?.emailAddress) {
+      duplicateConditions.push({ "data.emailAddress": input.data.emailAddress });
+    }
 
     if (duplicateConditions.length > 0) {
       const existingVisitor = await VisitorModel.findOne({
         $or: duplicateConditions,
         signedType: "In",
+        location: location._id,
       });
 
       if (existingVisitor) {
-        return {
+        return res.status(409).json({
           error: { message: "Visitor already exists", code: "ALREADY_EXISTS" },
-        };
+        });
       }
     }
 
-    // ✅ Category
     const category = await visitorCategory.findById(input.category).lean();
     if (!category) {
-      return {
+      return res.status(400).json({
         error: {
           message: "Invalid visitor category",
           code: "INVALID_CATEGORY",
         },
-      };
+      });
     }
+
+    if (
+      category.location?.toString() !== location._id.toString() ||
+      category.company?.toString() !== location.company?.toString()
+    ) {
+      return res.status(400).json({
+        error: {
+          message: "Category does not belong to this location",
+          code: "INVALID_CATEGORY",
+        },
+      });
+    }
+
+    const hostRequired =
+      !!location.selectHost?.allowOnStaticQR &&
+      (!!category.host || !!location.selectHost?.requireVisitors);
+
+    let department: any = null;
     let notifyTargets: any[] = [];
     let employees: Types.ObjectId[] = [];
 
-    const employee = await UserModel.findById(input.employee).lean();
+    if (input.department) {
+      department = await DepartmentModel.findById(input.department)
+        .populate("user")
+        .lean();
 
-    if (!employee) {
-      return {
+      if (!department) {
+        return res.status(400).json({
+          error: {
+            message: "Selected department not found",
+            code: "INVALID_DEPARTMENT",
+          },
+        });
+      }
+
+      notifyTargets = department.user || [];
+      employees = notifyTargets.map((u: any) => u._id);
+    } else if (input.employee) {
+      const employee = await UserModel.findById(input.employee).lean();
+
+      if (!employee) {
+        return res.status(400).json({
+          error: {
+            message: "Selected employee not found",
+            code: "INVALID_EMPLOYEE",
+          },
+        });
+      }
+
+      notifyTargets = [employee];
+      employees = [employee._id];
+    } else if (hostRequired) {
+      return res.status(400).json({
         error: {
-          message: "Selected employee not found",
-          code: "INVALID_EMPLOYEE",
+          message: "Host selection is required",
+          code: "HOST_REQUIRED",
         },
-      };
+      });
     }
-    let department: any = null;
-    notifyTargets = [employee];
-    employees = [employee._id];
+
+    const includeResponses =
+      location?.approvals?.includeAllVisitorResponses ?? false;
+    const visitorData =
+      includeResponses && input.data
+        ? (input.data as Record<string, any>)
+        : undefined;
 
     const notifyUsers = async (
       users: any[],
@@ -189,52 +291,60 @@ visitUsRouter.post("/submitVisitor", async (req, res) => {
 
       await Promise.all(
         users.map(async (user) => {
-          // Email
           if (user.notificationPreference?.includes("Email")) {
+            const hostLabel =
+              department?.name ||
+              [user.firstName, user.lastName].filter(Boolean).join(" ") ||
+              user.name ||
+              "N/A";
+
             if (type === "arrival") {
               await sendVisitorArrivalEmail(
-                input.data.fullName,
+                input.data?.fullName,
                 category.name,
                 new Date().toLocaleString(),
-                department?.name || user.name || "N/A",
+                hostLabel,
                 input.img,
                 user.email,
+                visitorData,
               );
             } else {
               await sendVisitorApprovalEmail(
-                input.data.fullName,
+                input.data?.fullName,
                 category.name,
                 new Date().toLocaleString(),
-                department?.name || user.name || "N/A",
+                hostLabel,
                 input.img,
                 `${process.env.SERVER_URL}/approveVisitor?visitorId=${visitorId}`,
                 `${process.env.SERVER_URL}/rejectVisitor?visitorId=${visitorId}`,
                 user.email,
+                visitorData,
               );
             }
           }
 
-          // SMS
           if (user.phone && user.notificationPreference?.includes("SMS")) {
             const msg =
               type === "arrival"
-                ? `Hello, A new visitor, ${input.data.fullName}${
-                    input.data.companyName ? ` (${input.data.companyName})` : ""
+                ? `Hello, A new visitor, ${input.data?.fullName}${
+                    input.data?.companyName ? ` (${input.data.companyName})` : ""
                   }, is here to meet you. — Maximal Security`
-                : `Hello, A new visitor, ${input.data.fullName}, requires approval. Please check your email. — Maximal Security`;
+                : `Hello, A new visitor, ${input.data?.fullName}, requires approval. Please check your email. — Maximal Security`;
 
             await sendTwilioMessage(user.phone, msg);
           }
         }),
       );
     };
+
     const newInput = {
       ...input,
-      company: category.company,
+      company: location.company,
+      location: location._id,
       employees,
       signedType: category.approval ? "Pending" : "In",
-      // Client-provided ISO datetime (online: now; offline sync: original local time)
-      signedIn: input.signedIn,
+      signedIn: input.signedIn || new Date().toISOString(),
+      signedInDevice: input.signedInDevice || "QR",
     };
 
     const visitor = await VisitorModel.create(newInput);
@@ -246,34 +356,42 @@ visitUsRouter.post("/submitVisitor", async (req, res) => {
         visitor._id.toString(),
       );
     }
+
     res.json({
       message: "Visitor submitted successfully",
       visitorId: visitor._id,
+      signedType: visitor.signedType,
     });
-  } catch (error) {}
+  } catch (error) {
+    console.error("Submit Visitor Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
 });
-visitUsRouter.post('/checkOutVisitor', async (req, res) => {
+
+visitUsRouter.post("/checkOutVisitor", async (req, res) => {
   try {
     const { visitorId } = req.body;
 
     const visitor = await VisitorModel.findById(visitorId);
 
     if (!visitor) {
-      return res.status(404).json({ message: 'Visitor not found' });
+      return res.status(404).json({ message: "Visitor not found" });
     }
 
-    if (visitor.signedType !== 'In') {
-      return res.status(400).json({ message: 'Visitor is not currently signed in' });
+    if (visitor.signedType !== "In") {
+      return res
+        .status(400)
+        .json({ message: "Visitor is not currently signed in" });
     }
 
-    visitor.signedType = 'Out';
+    visitor.signedType = "Out";
     visitor.signedOut = new Date().toISOString();
     await visitor.save();
-    
-    res.json({ message: 'Visitor checked out successfully' });
+
+    res.json({ message: "Visitor checked out successfully" });
   } catch (error) {
-    console.error('Check Out Visitor Error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Check Out Visitor Error:", error);
+    res.status(500).json({ message: "Server error" });
   }
 });
 

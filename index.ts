@@ -29,6 +29,11 @@ const allowedOrigins = [
   "https://swiped-visit-us.vercel.app",
 ];
 
+const isLocalNetworkOrigin = (origin: string) =>
+  /^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})(:\d+)?$/.test(
+    origin,
+  );
+
 console.log("Allowed CORS origins:", allowedOrigins);
 const corsOptions: CorsOptions = {
   origin: (origin, callback) => {
@@ -38,7 +43,7 @@ const corsOptions: CorsOptions = {
     }
 
     const normalized = origin.replace(/\/$/, "");
-    if (allowedOrigins.includes(normalized)) {
+    if (allowedOrigins.includes(normalized) || isLocalNetworkOrigin(normalized)) {
       return callback(null, true);
     }
 
