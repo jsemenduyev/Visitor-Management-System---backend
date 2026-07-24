@@ -6,13 +6,21 @@ export default async (args: MutationAddLocationArgs, ctx: any) => {
     try {
         const { user } = ctx
         const company = user.company
+        
+        const updateData: any = {
+            name: args.name,
+            company,
+            address: args.address,
+            customHeading: args.customHeading,
+        };
+        
+        // Type assertion to handle lat/lng until codegen is run with server running
+        const argsWithCoords = args as any;
+        if (argsWithCoords.lat) updateData.lat = parseFloat(argsWithCoords.lat);
+        if (argsWithCoords.lng) updateData.lng = parseFloat(argsWithCoords.lng);
+        
         if (args._id) {
-            const location = await OfficeLocationModel.findByIdAndUpdate(args._id, {
-                name: args.name,
-                company,
-                address: args.address,
-                customHeading: args.customHeading,
-            }, { new: true })
+            const location = await OfficeLocationModel.findByIdAndUpdate(args._id, updateData, { new: true })
 
             if (!location) {
                 return {
@@ -24,12 +32,7 @@ export default async (args: MutationAddLocationArgs, ctx: any) => {
             }
             return { location }
         } else {
-            const location = new OfficeLocationModel({
-                name: args.name,
-                company,
-                address: args.address,
-                customHeading: args.customHeading,
-            })
+            const location = new OfficeLocationModel(updateData)
             await location.save()
             await CompanyModel.findByIdAndUpdate(company, {
                 $push: {

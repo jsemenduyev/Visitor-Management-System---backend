@@ -49,6 +49,8 @@ export const OfficeLocation = new GraphQLObjectType({
     id: { type: GraphQLID, resolve: (src) => src._id },
     name: { type: GraphQLString },
     address: { type: GraphQLString },
+    lat: { type: GraphQLString },
+    lng: { type: GraphQLString },
     customHeading: { type: GraphQLString },
     company: {
       type: CompanyType,

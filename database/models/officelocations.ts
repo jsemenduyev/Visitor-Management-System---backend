@@ -18,6 +18,12 @@ const OfficeLocationSchema = new Schema(
     address: {
       type: String,
     },
+    lat: {
+      type: Number,
+    },
+    lng: {
+      type: Number,
+    },
     customHeading: {
       type: String,
     },

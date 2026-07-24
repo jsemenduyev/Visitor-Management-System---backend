@@ -41,6 +41,12 @@ export const officeLocationsMutation = {
       customHeading: {
         type: GraphQLString,
       },
+      lat: {
+        type: GraphQLString,
+      },
+      lng: {
+        type: GraphQLString,
+      },
     },
     resolve: (_, args, ctx) =>
       isAdminOrManager(args, ctx, AddOfficeLocationResolver),
