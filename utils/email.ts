@@ -93,3 +93,30 @@ export const sendVerificationLinkToUser = async (
     `,
   });
 };
+
+export const sendTemporaryPasswordEmail = async (
+  name: string,
+  email: string,
+  tempPassword: string,
+) => {
+  const transporter = createTransporter();
+
+  await transporter.sendMail({
+    from: `"Maximal Security " <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject: "Your Temporary Password - Maximal Security",
+    html: `
+      <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; background-color: #f8f9fa;">
+        <h2 style="color: #004175;">Hello ${name || "there"},</h2>
+
+        <p>An account has been created for you on <strong>Maximal Security</strong>.</p>
+        
+        <p>Your temporary password is: <strong style="font-size: 16px; color: #004175;">${tempPassword}</strong></p>
+
+        <p>Please log in using this email and your temporary password. You will be prompted to set your own password upon your first sign-in.</p>
+
+        <p style="font-size: 13px; margin-top: 20px;">— Maximal Security Team</p>
+      </div>
+    `,
+  });
+};

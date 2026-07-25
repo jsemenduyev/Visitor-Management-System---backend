@@ -80,6 +80,10 @@ const UserSchema = new Schema(
       type: Date,
       default: null,
     },
+    needPasswordReset: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

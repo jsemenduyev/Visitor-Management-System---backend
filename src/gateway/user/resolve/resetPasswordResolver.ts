@@ -21,6 +21,7 @@ export default async (_, args) => {
     user.password = hashedPassword;
     user.otp = undefined;
     user.otpExpiry = undefined;
+    user.needPasswordReset = false;
     await user.save();
 
     return { user };

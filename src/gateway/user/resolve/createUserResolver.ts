@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 import { CompanyModel } from "../../../../database/models/company";
 import { UserModel } from "../../../../database/models/user";
-import { sendVerificationLinkToUser } from "../../../../utils/email";
+import { sendVerificationLinkToUser, sendTemporaryPasswordEmail } from "../../../../utils/email";
 import { MutationCreateUserArgs } from "../../../generated/graphql";
 
 export default async (args: MutationCreateUserArgs, ctx: any) => {
@@ -36,15 +36,9 @@ export default async (args: MutationCreateUserArgs, ctx: any) => {
       String(input.role || "").toLowerCase() === "manager" ||
       String(input.role || "").toLowerCase() === "admin";
 
+    let tempPassword = "";
     if (needsPassword) {
-      if (!input.password || String(input.password).trim().length < 6) {
-        return {
-          error: {
-            message: "Password is required (min 6 characters) for manager/admin",
-            code: "PASSWORD_REQUIRED",
-          },
-        };
-      }
+      tempPassword = Math.random().toString(36).slice(-8); // 8 character random string
     }
 
     const { password, ...rest } = input as typeof input & {
@@ -54,24 +48,25 @@ export default async (args: MutationCreateUserArgs, ctx: any) => {
     const createPayload: Record<string, any> = {
       ...rest,
       company,
-      status: false,
+      status: needsPassword ? true : false, // managers/admins active immediately to login with temp pass
+      needPasswordReset: needsPassword ? true : false,
     };
 
-    if (needsPassword && password) {
-      createPayload.password = await bcrypt.hash(password, 10);
+    if (needsPassword && tempPassword) {
+      createPayload.password = await bcrypt.hash(tempPassword, 10);
     }
 
     const createdEmployee = await UserModel.create(createPayload);
 
-    if (needsPassword) {
+    if (needsPassword && tempPassword) {
       try {
-        await sendVerificationLinkToUser(
-          createdEmployee._id.toString(),
+        await sendTemporaryPasswordEmail(
           createdEmployee.firstName || "User",
           createdEmployee.email,
+          tempPassword
         );
       } catch (emailError) {
-        console.error("Failed to send verification email:", emailError);
+        console.error("Failed to send temporary password email:", emailError);
       }
     }
 

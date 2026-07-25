@@ -66,6 +66,7 @@ export const UserType = new GraphQLObjectType({
     },
     isArchived: { type: GraphQLBoolean },
     archivedAt: { type: GraphQLDate },
+    needPasswordReset: { type: GraphQLBoolean },
 
     createdAt: { type: GraphQLDate },
     updatedAt: { type: GraphQLDate },

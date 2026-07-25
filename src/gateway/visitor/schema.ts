@@ -15,6 +15,8 @@ import { UpdateVisitorInput } from "./types/UpdateVisitorInput";
 import updateVisitorResolver from "./resolver/updateVisitorResolver";
 import getDeviceVisitorsResolver from "./resolver/getDeviceVisitorsResolver";
 import { SortedInput } from "./types/SortedInput";
+import { EvacuationList } from "./types/EvacuationList";
+import getEvacuationListResolver from "./resolver/getEvacuationListResolver";
 
 export const visitorQuery = {
   getVistors: {
@@ -73,6 +75,17 @@ export const visitorQuery = {
       },
     },
     resolve: getDeviceVisitorsResolver,
+  },
+  getEvacuationList: {
+    type: EvacuationList,
+    args: {
+      location: { type: GraphQLString },
+      search: { type: GraphQLString },
+      signedType: { type: GraphQLString },
+      limit: { type: GraphQLInt },
+      offset: { type: GraphQLInt },
+    },
+    resolve: getEvacuationListResolver,
   },
 };
 
