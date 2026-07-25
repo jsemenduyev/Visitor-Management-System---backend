@@ -30,8 +30,14 @@ import {
 } from "./types/BookingSpace";
 import GetBookingSpacesResolver from "./resolver/GetBookingSpacesResolver";
 import AddBookingSpaceResolver from "./resolver/AddBookingSpaceResolver";
-import { ResourceScheduleType } from "./types/ResourceSchedule";
+import {
+  ResourceScheduleType,
+  SpaceScheduleType,
+} from "./types/ResourceSchedule";
 import GetResourceScheduleResolver from "./resolver/GetResourceScheduleResolver";
+import GetAvailableResourcesResolver from "./resolver/GetAvailableResourcesResolver";
+import GetAvailableSpacesResolver from "./resolver/GetAvailableSpacesResolver";
+import GetSpaceScheduleResolver from "./resolver/GetSpaceScheduleResolver";
 
 export const spacesQuery = {
   getSpaces: {
@@ -65,7 +71,8 @@ export const spacesQuery = {
     args: {
       location: { type: new GraphQLNonNull(GraphQLID) },
     },
-    resolve: (_, args, ctx) => isAUthenticated(args, ctx, GetSpaceCategoriesResolver),
+    resolve: (_, args, ctx) =>
+      isAUthenticated(args, ctx, GetSpaceCategoriesResolver),
   },
 
   getBookingSpaces: {
@@ -78,7 +85,8 @@ export const spacesQuery = {
       start: { type: GraphQLString },
       end: { type: GraphQLString },
     },
-    resolve: (_, args, ctx) => isAUthenticated(args, ctx, GetBookingSpacesResolver),
+    resolve: (_, args, ctx) =>
+      isAUthenticated(args, ctx, GetBookingSpacesResolver),
   },
 
   getResourceSchedule: {
@@ -90,9 +98,47 @@ export const spacesQuery = {
       space: { type: GraphQLID },
       resourceCategory: { type: GraphQLID },
     },
-    resolve: (_, args, ctx) => isAUthenticated(args, ctx, GetResourceScheduleResolver),
+    resolve: (_, args, ctx) =>
+      isAUthenticated(args, ctx, GetResourceScheduleResolver),
+  },
+
+  getSpaceSchedule: {
+    type: new GraphQLList(SpaceScheduleType),
+    args: {
+      location: { type: new GraphQLNonNull(GraphQLID) },
+      startDate: { type: new GraphQLNonNull(GraphQLString) },
+      endDate: { type: new GraphQLNonNull(GraphQLString) },
+      space: { type: GraphQLID },
+    },
+    resolve: (_, args, ctx) =>
+      isAUthenticated(args, ctx, GetSpaceScheduleResolver),
+  },
+
+  getAvailableResources: {
+    type: new GraphQLList(ResourceScheduleType),
+    args: {
+      location: { type: new GraphQLNonNull(GraphQLID) },
+      start: { type: new GraphQLNonNull(GraphQLString) },
+      end: { type: new GraphQLNonNull(GraphQLString) },
+      resourceCategory: { type: GraphQLID },
+    },
+    resolve: (_, args, ctx) =>
+      isAUthenticated(args, ctx, GetAvailableResourcesResolver),
+  },
+
+  getAvailableSpaces: {
+    type: new GraphQLList(SpaceScheduleType),
+    args: {
+      location: { type: new GraphQLNonNull(GraphQLID) },
+      start: { type: new GraphQLNonNull(GraphQLString) },
+      end: { type: new GraphQLNonNull(GraphQLString) },
+      resource: { type: GraphQLID },
+    },
+    resolve: (_, args, ctx) =>
+      isAUthenticated(args, ctx, GetAvailableSpacesResolver),
   },
 };
+
 export const spacesMutation = {
   addSpaces: {
     type: SpacesPayload,
@@ -141,7 +187,8 @@ export const spacesMutation = {
         type: SpacesCategoryInput,
       },
     },
-    resolve: (_, args, ctx) => isAdminOrManager(args, ctx, AddSpaceCategoryResolver),
+    resolve: (_, args, ctx) =>
+      isAdminOrManager(args, ctx, AddSpaceCategoryResolver),
   },
   updateSpaceCategory: {
     type: SpacesCategoryPayload,
@@ -151,7 +198,8 @@ export const spacesMutation = {
         type: SpacesCategoryInput,
       },
     },
-    resolve: (_, args, ctx) => isAdminOrManager(args, ctx, UpdateSpaceCategoryResolver),
+    resolve: (_, args, ctx) =>
+      isAdminOrManager(args, ctx, UpdateSpaceCategoryResolver),
   },
   addBookingSpace: {
     type: BookingSpacePayload,
@@ -160,6 +208,7 @@ export const spacesMutation = {
         type: BookingSpaceInput,
       },
     },
-    resolve: (_, args, ctx) => isAUthenticated(args, ctx, AddBookingSpaceResolver),
+    resolve: (_, args, ctx) =>
+      isAUthenticated(args, ctx, AddBookingSpaceResolver),
   },
 };

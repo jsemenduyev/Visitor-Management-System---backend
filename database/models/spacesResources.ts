@@ -17,8 +17,10 @@ export const SpaceResourceSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: "spaces",
   },
+  /** Total bookable units of this resource */
   capacity: {
     type: Number,
+    required: true,
   },
   features: {
     type: [String],

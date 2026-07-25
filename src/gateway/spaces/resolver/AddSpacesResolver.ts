@@ -1,8 +1,7 @@
 import SpaceModel from "../../../../database/models/spaces";
-import { MutationAddSpacesArgs } from "../../../generated/graphql";
 import { assertLocationBelongsToCompany } from "../utils/assertLocationCompany";
 
-export default async (args: MutationAddSpacesArgs, ctx) => {
+export default async (args: any, ctx: any) => {
   const { input } = args;
   const company = ctx?.user?.company;
 
@@ -12,10 +11,24 @@ export default async (args: MutationAddSpacesArgs, ctx) => {
   );
   if (!ownedLocation) {
     return {
-      space: null,
+      spaces: null,
       error: {
         message: "Location not found",
         code: "NOT_FOUND",
+      },
+    };
+  }
+
+  if (
+    typeof input?.capacity !== "number" ||
+    !Number.isFinite(input.capacity) ||
+    input.capacity < 1
+  ) {
+    return {
+      spaces: null,
+      error: {
+        message: "Capacity must be at least 1",
+        code: "VALIDATION",
       },
     };
   }
@@ -26,7 +39,7 @@ export default async (args: MutationAddSpacesArgs, ctx) => {
   });
   if (findSpace) {
     return {
-      space: null,
+      spaces: null,
       error: {
         message: "Same Name Space Already Exist to this Location",
         code: "SPACE_EXIST",
@@ -36,7 +49,7 @@ export default async (args: MutationAddSpacesArgs, ctx) => {
 
   const space = await SpaceModel.create(input);
   return {
-    space,
+    spaces: space,
     error: null,
   };
 };

@@ -1,6 +1,7 @@
 import {
   GraphQLID,
   GraphQLInputObjectType,
+  GraphQLInt,
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
@@ -23,6 +24,7 @@ export const BookingSpaceType = new GraphQLObjectType({
     end: { type: GraphQLDateTime },
     location: { type: OfficeLocation },
     space: { type: Spaces },
+    people: { type: GraphQLInt },
   }),
 });
 
@@ -44,5 +46,6 @@ export const BookingSpaceInput = new GraphQLInputObjectType({
     end: { type: GraphQLString },
     location: { type: GraphQLID },
     space: { type: GraphQLID },
+    people: { type: GraphQLInt },
   }),
 });

@@ -91,6 +91,7 @@ export type BookingSpaceInput = {
   employee?: InputMaybe<Scalars['ID']['input']>;
   end?: InputMaybe<Scalars['String']['input']>;
   location?: InputMaybe<Scalars['ID']['input']>;
+  people?: InputMaybe<Scalars['Int']['input']>;
   resource?: InputMaybe<Scalars['ID']['input']>;
   space?: InputMaybe<Scalars['ID']['input']>;
   start?: InputMaybe<Scalars['String']['input']>;
@@ -109,6 +110,7 @@ export type BookingSpaceType = {
   employee?: Maybe<User>;
   end?: Maybe<Scalars['DateTime']['output']>;
   location?: Maybe<OfficeLocation>;
+  people?: Maybe<Scalars['Int']['output']>;
   resource?: Maybe<SpacesResourceType>;
   space?: Maybe<SpacesType>;
   start?: Maybe<Scalars['DateTime']['output']>;
@@ -953,6 +955,9 @@ export type Query = {
   getOfficeLocations?: Maybe<Array<Maybe<OfficeLocation>>>;
   getPreVisitors?: Maybe<PreRegisterList>;
   getResourceSchedule?: Maybe<Array<Maybe<ResourceSchedule>>>;
+  getAvailableResources?: Maybe<Array<Maybe<ResourceSchedule>>>;
+  getAvailableSpaces?: Maybe<Array<Maybe<SpaceSchedule>>>;
+  getSpaceSchedule?: Maybe<Array<Maybe<SpaceSchedule>>>;
   getSpaceCategories?: Maybe<Array<Maybe<SpacesCategoryType>>>;
   getSpaceResource?: Maybe<Array<Maybe<SpacesResourceType>>>;
   getSpaces?: Maybe<Array<Maybe<SpacesType>>>;
@@ -1163,9 +1168,24 @@ export type ReorderItemInput = {
 export type ResourceSchedule = {
   __typename?: 'ResourceSchedule';
   _id?: Maybe<Scalars['ID']['output']>;
+  available?: Maybe<Scalars['Int']['output']>;
+  booked?: Maybe<Scalars['Int']['output']>;
   bookings?: Maybe<Array<Maybe<SimpleBookingTime>>>;
+  capacity?: Maybe<Scalars['Int']['output']>;
   categoryName?: Maybe<Scalars['String']['output']>;
+  name?: Maybe<Scalars['String']['output']>;
   resourceName?: Maybe<Scalars['String']['output']>;
+  space?: Maybe<SpacesType>;
+};
+
+export type SpaceSchedule = {
+  __typename?: 'SpaceSchedule';
+  _id?: Maybe<Scalars['ID']['output']>;
+  availablePeople?: Maybe<Scalars['Int']['output']>;
+  bookedPeople?: Maybe<Scalars['Int']['output']>;
+  bookings?: Maybe<Array<Maybe<SimpleBookingTime>>>;
+  capacity?: Maybe<Scalars['Int']['output']>;
+  name?: Maybe<Scalars['String']['output']>;
 };
 
 export type ReturningVisitorsInput = {
@@ -1313,6 +1333,7 @@ export enum SignatureTypeEnum {
 export type SimpleBookingTime = {
   __typename?: 'SimpleBookingTime';
   end?: Maybe<Scalars['DateTime']['output']>;
+  people?: Maybe<Scalars['Int']['output']>;
   start?: Maybe<Scalars['DateTime']['output']>;
 };
 
@@ -1343,6 +1364,7 @@ export type SpacesCategoryType = {
 };
 
 export type SpacesInputType = {
+  capacity?: InputMaybe<Scalars['Int']['input']>;
   location?: InputMaybe<Scalars['ID']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   resource?: InputMaybe<Scalars['String']['input']>;
@@ -1389,6 +1411,7 @@ export type SpacesResourceType = {
 export type SpacesType = {
   __typename?: 'SpacesType';
   _id?: Maybe<Scalars['ID']['output']>;
+  capacity?: Maybe<Scalars['Int']['output']>;
   location?: Maybe<OfficeLocation>;
   name?: Maybe<Scalars['String']['output']>;
   resource?: Maybe<Array<Maybe<SpacesResourceType>>>;

@@ -47,6 +47,21 @@ export default async (args: any, ctx: any) => {
     }
   }
 
+  if (
+    input?.capacity != null &&
+    (typeof input.capacity !== "number" ||
+      !Number.isFinite(input.capacity) ||
+      input.capacity < 1)
+  ) {
+    return {
+      spaces: null,
+      error: {
+        message: "Capacity must be at least 1",
+        code: "VALIDATION",
+      },
+    };
+  }
+
   const space = await SpaceModel.findByIdAndUpdate(_id, input, { new: true });
 
   return {

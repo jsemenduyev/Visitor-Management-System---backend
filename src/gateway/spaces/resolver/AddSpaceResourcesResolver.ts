@@ -1,9 +1,8 @@
 import SpaceResourceModel from "../../../../database/models/spacesResources";
 import SpaceModel from "../../../../database/models/spaces";
-import { MutationAddResourcesArgs } from "../../../generated/graphql";
 import { assertLocationBelongsToCompany } from "../utils/assertLocationCompany";
 
-export default async (args: MutationAddResourcesArgs, ctx) => {
+export default async (args: any, ctx: any) => {
   const { input } = args;
   const company = ctx?.user?.company;
 
@@ -16,6 +15,19 @@ export default async (args: MutationAddResourcesArgs, ctx) => {
       error: {
         message: "Location not found",
         code: "NOT_FOUND",
+      },
+    };
+  }
+
+  if (
+    typeof input?.capacity !== "number" ||
+    !Number.isFinite(input.capacity) ||
+    input.capacity < 1
+  ) {
+    return {
+      error: {
+        message: "Total units (capacity) must be at least 1",
+        code: "VALIDATION",
       },
     };
   }

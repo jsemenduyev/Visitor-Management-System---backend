@@ -1,6 +1,7 @@
 import {
   GraphQLID,
   GraphQLInputObjectType,
+  GraphQLInt,
   GraphQLList,
   GraphQLObjectType,
   GraphQLString,
@@ -17,6 +18,9 @@ export const Spaces = new GraphQLObjectType({
     },
     name: {
       type: GraphQLString,
+    },
+    capacity: {
+      type: GraphQLInt,
     },
     resource: {
       type: new GraphQLList(SpacesResource),
@@ -43,6 +47,9 @@ export const SpacesInput = new GraphQLInputObjectType({
   fields: () => ({
     name: {
       type: GraphQLString,
+    },
+    capacity: {
+      type: GraphQLInt,
     },
     resource: {
       type: GraphQLString,

@@ -1,13 +1,12 @@
 import SpaceResourceModel from "../../../../database/models/spacesResources";
 import { assertLocationBelongsToCompany } from "../utils/assertLocationCompany";
 import {
-  bookingsForResource,
   findOverlappingBookings,
-  maxConcurrentUnits,
+  resourceBookedCount,
 } from "../utils/overlapStats";
 
 export default async (args: any, ctx: any) => {
-  const { location, startDate, endDate, space, resourceCategory } = args;
+  const { location, start, end, resourceCategory } = args;
   const company = ctx?.user?.company;
 
   const ownedLocation = await assertLocationBelongsToCompany(location, company);
@@ -16,18 +15,12 @@ export default async (args: any, ctx: any) => {
   }
 
   const query: any = { location };
-  if (space) query.space = space;
   if (resourceCategory) query.resourceCategory = resourceCategory;
 
   const resources = await SpaceResourceModel.find(query)
     .populate("resourceCategory", "name")
     .populate("space")
     .lean();
-
-  const start = new Date(startDate);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(endDate);
-  end.setHours(23, 59, 59, 999);
 
   const bookings = await findOverlappingBookings({
     location,
@@ -36,15 +29,9 @@ export default async (args: any, ctx: any) => {
   });
 
   return resources.map((resource: any) => {
-    const capacity =
-      typeof resource.capacity === "number" ? resource.capacity : 0;
-    const resourceBookings = bookingsForResource(
-      bookings,
-      resource._id.toString()
-    );
-    const booked = maxConcurrentUnits(resourceBookings);
+    const capacity = typeof resource.capacity === "number" ? resource.capacity : 0;
+    const booked = resourceBookedCount(bookings, resource._id.toString());
     const available = Math.max(0, capacity - booked);
-
     return {
       _id: resource._id,
       resourceName: resource.name,
@@ -56,11 +43,19 @@ export default async (args: any, ctx: any) => {
       capacity,
       booked,
       available,
-      bookings: resourceBookings.map((b: any) => ({
-        start: b.start,
-        end: b.end,
-        people: b.people ?? 1,
-      })),
+      bookings: bookings
+        .filter((b: any) => {
+          if (!b.resource) return false;
+          const id = b.resource._id
+            ? b.resource._id.toString()
+            : b.resource.toString();
+          return id === resource._id.toString();
+        })
+        .map((b: any) => ({
+          start: b.start,
+          end: b.end,
+          people: b.people ?? 1,
+        })),
     };
   });
 };

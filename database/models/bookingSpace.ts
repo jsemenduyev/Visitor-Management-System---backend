@@ -32,6 +32,13 @@ const BookingSpaceSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "spaces",
     },
+    /** Headcount for this booking (used against space.capacity) */
+    people: {
+      type: Number,
+      required: true,
+      default: 1,
+      min: 1,
+    },
   },
   { timestamps: true }
 );

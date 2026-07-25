@@ -5,6 +5,11 @@ const SpaceSchema = new Schema({
     type: String,
     required: true,
   },
+  /** Max people who can occupy this space at once */
+  capacity: {
+    type: Number,
+    required: true,
+  },
   resource: {
     type: Schema.Types.ObjectId,
     ref: "spaceresource",

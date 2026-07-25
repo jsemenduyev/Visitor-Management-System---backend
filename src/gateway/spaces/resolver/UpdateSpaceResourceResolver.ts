@@ -46,6 +46,21 @@ export default async (args: any, ctx: any) => {
     }
   }
 
+  if (
+    input?.capacity != null &&
+    (typeof input.capacity !== "number" ||
+      !Number.isFinite(input.capacity) ||
+      input.capacity < 1)
+  ) {
+    return {
+      resource: null,
+      error: {
+        message: "Total units (capacity) must be at least 1",
+        code: "VALIDATION",
+      },
+    };
+  }
+
   const resource = await SpaceResourceModel.findByIdAndUpdate(_id, input, {
     new: true,
   });
