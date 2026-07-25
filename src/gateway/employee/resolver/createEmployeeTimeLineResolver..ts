@@ -41,10 +41,20 @@ export default async (args: MutationCreateEmployeeTimelineArgs, ctx) => {
     };
 
     if (input._id) {
-      const updateTimeline = await EmployeeTimelineModel.findByIdAndUpdate(
-        { _id: input._id },
-        newInput
+      const updateTimeline = await EmployeeTimelineModel.findOneAndUpdate(
+        { _id: input._id, company, employee: _id },
+        newInput,
+        { new: true }
       );
+
+      if (!updateTimeline) {
+        return {
+          error: {
+            message: "Timeline not found",
+            code: "NOT_FOUND",
+          },
+        };
+      }
 
       return {
         employee: updateTimeline,
@@ -53,7 +63,7 @@ export default async (args: MutationCreateEmployeeTimelineArgs, ctx) => {
     } else {
       if (input.signedType === "Out") {
         await EmployeeTimelineModel.updateMany(
-          { employee: _id, signedType: { $in: ["In", "Remote"] } },
+          { employee: _id, company, signedType: { $in: ["In", "Remote"] } },
           { signedType: "Out", signedOut: newInput.signedOut, signedOutDevice: newInput.signedOutDevice }
         );
         const createdTimeline = await EmployeeTimelineModel.create(newInput);

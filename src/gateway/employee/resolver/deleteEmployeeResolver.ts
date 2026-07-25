@@ -1,4 +1,3 @@
-import EmployeeTimelineModel from "../../../../database/models/employeeTimeline";
 import { UserModel } from "../../../../database/models/user";
 import DepartmentModel from "../../../../database/models/department";
 import { MutationDeleteEmployeeArgs } from "../../../generated/graphql";
@@ -6,12 +5,17 @@ import { MutationDeleteEmployeeArgs } from "../../../generated/graphql";
 export default async (args: MutationDeleteEmployeeArgs, ctx) => {
   try {
     const { employeeId } = args;
+    const company = ctx?.user?.company;
 
     if (!employeeId) {
       throw new Error("Employee ID is required");
     }
 
-    const user = await UserModel.findById(employeeId);
+    if (!company) {
+      throw new Error("User does not belong to any company");
+    }
+
+    const user = await UserModel.findOne({ _id: employeeId, company });
 
     if (!user) {
       throw new Error("Employee not found");
@@ -26,15 +30,15 @@ export default async (args: MutationDeleteEmployeeArgs, ctx) => {
       };
     }
 
-    /** ✅ REMOVE USER FROM DEPARTMENTS */
+    /** ✅ REMOVE USER FROM DEPARTMENTS (same company) */
     await DepartmentModel.updateMany(
-      { user: employeeId },
+      { user: employeeId, company },
       { $pull: { user: employeeId } }
     );
 
     /** ✅ SOFT DELETE — mark archived instead of removing */
-    const archivedUser = await UserModel.findByIdAndUpdate(
-      employeeId,
+    const archivedUser = await UserModel.findOneAndUpdate(
+      { _id: employeeId, company },
       { isArchived: true, archivedAt: new Date() },
       { new: true }
     );

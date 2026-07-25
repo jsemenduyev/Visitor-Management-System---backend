@@ -1,10 +1,35 @@
 import BookingSpaceModel from "../../../../database/models/bookingSpace";
+import OfficeLocationModel from "../../../../database/models/officelocations";
+import { assertLocationBelongsToCompany } from "../utils/assertLocationCompany";
 
 export default async (args: any, ctx: any) => {
   const { location, employee, resource, space, start, end } = args;
+  const company = ctx?.user?.company;
+
+  if (!company) {
+    return [];
+  }
 
   const query: any = {};
-  if (location) query.location = location;
+
+  if (location) {
+    const ownedLocation = await assertLocationBelongsToCompany(location, company);
+    if (!ownedLocation) {
+      return [];
+    }
+    query.location = location;
+  } else {
+    // Constrain to company-owned locations when location is omitted
+    const companyLocations = await OfficeLocationModel.find({ company })
+      .select("_id")
+      .lean();
+    const locationIds = companyLocations.map((l: any) => l._id);
+    if (locationIds.length === 0) {
+      return [];
+    }
+    query.location = { $in: locationIds };
+  }
+
   if (employee) query.employee = employee;
   if (resource) query.resource = resource;
   if (space) query.space = space;

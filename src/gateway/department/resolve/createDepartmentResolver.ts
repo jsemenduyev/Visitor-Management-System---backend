@@ -1,15 +1,29 @@
 import DepartmentModel from "../../../../database/models/department";
 import { MutationCreateDepartmentArgs } from "../../../generated/graphql";
 
-export default async (args: MutationCreateDepartmentArgs) => {
+export default async (args: MutationCreateDepartmentArgs, ctx) => {
   try {
     const { input } = args;
+    const company = ctx?.user?.company;
+
+    if (!company) {
+      return {
+        error: {
+          message: "User does not belong to any company",
+          code: "NO_COMPANY_FOUND",
+        },
+      };
+    }
+
+    // Never trust client-provided company — always use caller's company
+    const { company: _ignoredCompany, ...restInput } = input as any;
+    const scopedInput = { ...restInput, company };
 
     // Duplicate check only for CREATE
     if (!input._id) {
       const existingDepartment = await DepartmentModel.findOne({
         name: input.name,
-        company: input.company, // <-- FIXED
+        company,
       });
 
       if (existingDepartment) {
@@ -22,13 +36,22 @@ export default async (args: MutationCreateDepartmentArgs) => {
       }
     }
 
-    // Update existing department
+    // Update existing department (scoped to caller's company)
     if (input._id) {
-      const updatedDepartment = await DepartmentModel.findByIdAndUpdate(
-        input._id,
-        input,
-        { new: true } // <-- return updated doc
+      const updatedDepartment = await DepartmentModel.findOneAndUpdate(
+        { _id: input._id, company },
+        scopedInput,
+        { new: true }
       );
+
+      if (!updatedDepartment) {
+        return {
+          error: {
+            message: "Department not found",
+            code: "NOT_FOUND",
+          },
+        };
+      }
 
       return {
         department: updatedDepartment,
@@ -37,7 +60,7 @@ export default async (args: MutationCreateDepartmentArgs) => {
     }
 
     // Create new department
-    const createdDepartment = await DepartmentModel.create(input);
+    const createdDepartment = await DepartmentModel.create(scopedInput);
 
     return {
       department: createdDepartment,

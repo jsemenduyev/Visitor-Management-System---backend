@@ -1,11 +1,17 @@
 import SpaceResourceModel from "../../../../database/models/spacesResources";
 import BookingSpaceModel from "../../../../database/models/bookingSpace";
+import { assertLocationBelongsToCompany } from "../utils/assertLocationCompany";
 
 export default async (args: any, ctx: any) => {
   const { location, startDate, endDate, space, resourceCategory } = args;
+  const company = ctx?.user?.company;
 
-  const query: any = {};
-  if (location) query.location = location;
+  const ownedLocation = await assertLocationBelongsToCompany(location, company);
+  if (!ownedLocation) {
+    return [];
+  }
+
+  const query: any = { location };
   if (space) query.space = space;
   if (resourceCategory) query.resourceCategory = resourceCategory;
 
@@ -19,7 +25,6 @@ export default async (args: any, ctx: any) => {
   const end = new Date(endDate);
   end.setHours(23, 59, 59, 999);
 
-  
   const bookings = await BookingSpaceModel.find({
     location,
     start: { $lte: end },
@@ -32,11 +37,15 @@ export default async (args: any, ctx: any) => {
     return {
       _id: resource._id,
       resourceName: resource.name,
-      categoryName: resource.resourceCategory ? resource.resourceCategory.name : null,
+      categoryName: resource.resourceCategory
+        ? resource.resourceCategory.name
+        : null,
       bookings: bookings
         .filter((b: any) => {
           if (!b.resource) return false;
-          const bookingResourceId = b.resource._id ? b.resource._id.toString() : b.resource.toString();
+          const bookingResourceId = b.resource._id
+            ? b.resource._id.toString()
+            : b.resource.toString();
           const currentResourceId = resource._id.toString();
           return bookingResourceId === currentResourceId;
         })

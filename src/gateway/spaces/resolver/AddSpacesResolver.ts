@@ -1,8 +1,25 @@
 import SpaceModel from "../../../../database/models/spaces";
 import { MutationAddSpacesArgs } from "../../../generated/graphql";
+import { assertLocationBelongsToCompany } from "../utils/assertLocationCompany";
 
-export default async (args: MutationAddSpacesArgs) => {
+export default async (args: MutationAddSpacesArgs, ctx) => {
   const { input } = args;
+  const company = ctx?.user?.company;
+
+  const ownedLocation = await assertLocationBelongsToCompany(
+    input?.location,
+    company
+  );
+  if (!ownedLocation) {
+    return {
+      space: null,
+      error: {
+        message: "Location not found",
+        code: "NOT_FOUND",
+      },
+    };
+  }
+
   const findSpace = await SpaceModel.findOne({
     location: input?.location,
     name: input?.name,

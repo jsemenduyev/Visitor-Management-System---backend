@@ -28,7 +28,10 @@ export default async (args: QueryGetDepartmentsArgs, ctx) => {
       .limit(limit)
       .lean();
 
-    const count = await DepartmentModel.countDocuments(query);
+    const count = await DepartmentModel.countDocuments({
+      company: user.company,
+      ...query,
+    });
     return {
       department,
       count,

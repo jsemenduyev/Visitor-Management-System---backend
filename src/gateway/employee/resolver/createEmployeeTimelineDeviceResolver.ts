@@ -40,10 +40,19 @@ export default async (_, args: MutationCreatedEmployeeTimelineDeviceArgs) => {
     };
 
     if (input._id) {
-      const updateTimeline = await EmployeeTimelineModel.findByIdAndUpdate(
-        { _id: input._id },
+      const updateTimeline = await EmployeeTimelineModel.findOneAndUpdate(
+        { _id: input._id, company, employee: _id },
         newInput,
+        { new: true },
       );
+      if (!updateTimeline) {
+        return {
+          error: {
+            message: "Timeline not found",
+            code: "NOT_FOUND",
+          },
+        };
+      }
       await sendTeamsNotification(
         company.toString(), // pass companyId
         `🔴 <b>${updateTimeline?.firstName}</b> has <b>signed out</b> at ${new Date().toLocaleTimeString()}`,
@@ -57,6 +66,7 @@ export default async (_, args: MutationCreatedEmployeeTimelineDeviceArgs) => {
         await EmployeeTimelineModel.updateMany(
           {
             employee: input.employee,
+            company,
             signedType: { $in: ["In", "Remote"] },
           },
           {
@@ -78,7 +88,7 @@ export default async (_, args: MutationCreatedEmployeeTimelineDeviceArgs) => {
         };
       } else if (input.signedType == "Remote") {
         await EmployeeTimelineModel.updateMany(
-          { employee: input.employee, signedType: "In" },
+          { employee: input.employee, company, signedType: "In" },
           {
             signedType: "Out",
             signedOut: newInput.signedOut,
@@ -97,7 +107,7 @@ export default async (_, args: MutationCreatedEmployeeTimelineDeviceArgs) => {
         };
       } else {
         await EmployeeTimelineModel.updateMany(
-          { employee: input.employee },
+          { employee: input.employee, company },
           {
             signedType: "Out",
             signedOut: newInput.signedOut,

@@ -7,7 +7,8 @@ import VisitorModel from "../../../../database/models/visitor";
 import { MutationDeleteDepartmentArgs } from "../../../generated/graphql";
 
 export default async (
-  args: MutationDeleteDepartmentArgs
+  args: MutationDeleteDepartmentArgs,
+  ctx
 ): Promise<string> => {
   const session = await mongoose.startSession();
 
@@ -15,15 +16,21 @@ export default async (
     session.startTransaction();
 
     const { departmentId } = args;
+    const company = ctx?.user?.company;
 
     if (!departmentId) {
       throw new Error("Department ID is required");
     }
 
-    /** 1️⃣ FIND DEPARTMENT */
-    const department = await DepartmentModel.findById(departmentId).session(
-      session
-    );
+    if (!company) {
+      throw new Error("User does not belong to any company");
+    }
+
+    /** 1️⃣ FIND DEPARTMENT (scoped to caller's company) */
+    const department = await DepartmentModel.findOne({
+      _id: departmentId,
+      company,
+    }).session(session);
 
     if (!department) {
       throw new Error("Department not found");
@@ -53,15 +60,18 @@ export default async (
       { session }
     );
 
-    /** 4️⃣ UNSET DEPARTMENT FROM USERS (if User has department field) */
+    /** 4️⃣ UNSET DEPARTMENT FROM USERS (scoped by company) */
     await UserModel.updateMany(
-      { department: departmentId },
+      { department: departmentId, company: department.company },
       { $set: { department: null } },
       { session }
     );
 
     /** 5️⃣ DELETE DEPARTMENT */
-    await DepartmentModel.findByIdAndDelete(departmentId, { session });
+    await DepartmentModel.findOneAndDelete(
+      { _id: departmentId, company },
+      { session }
+    );
 
     /** ✅ COMMIT */
     await session.commitTransaction();
