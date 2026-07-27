@@ -1,6 +1,9 @@
 import bcrypt from "bcrypt";
 import { UserModel } from "../../../../database/models/user";
-import { sendVerificationLinkToOwner } from "../../../../utils/email";
+import {
+  sendVerificationLinkToOwner,
+  sendVerificationLinkToUser,
+} from "../../../../utils/email";
 import { MutationSignupArgs } from "../../../generated/graphql";
 import { CompanyModel } from "../../../../database/models/company";
 import OfficeLocationModel from "../../../../database/models/officelocations";
@@ -112,12 +115,31 @@ export default async (_, args: MutationSignupArgs) => {
   // 6. Save user to DB
   const savedUser = await newUser.save();
 
-  await sendVerificationLinkToOwner(
-    savedUser._id.toString(),
-    `${savedUser.firstName ?? ""} ${savedUser.lastName ?? ""}`.trim(),
-    savedUser.email,
-    companyName,
-  );
+  const fullName = `${savedUser.firstName ?? ""} ${savedUser.lastName ?? ""}`.trim();
+
+  try {
+    await sendVerificationLinkToOwner(
+      savedUser._id.toString(),
+      fullName,
+      savedUser.email,
+      companyName,
+    );
+    await sendVerificationLinkToUser(
+      savedUser._id.toString(),
+      fullName,
+      savedUser.email,
+    );
+  } catch (emailError) {
+    console.error("Failed to send signup verification emails:", emailError);
+    return {
+      user: savedUser,
+      error: {
+        message:
+          "Account created but verification email could not be sent. Please contact support.",
+        code: "EMAIL_SEND_FAILED",
+      },
+    };
+  }
 
   return {
     user: savedUser,

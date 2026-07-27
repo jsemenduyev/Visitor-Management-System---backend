@@ -1,29 +1,49 @@
 // utils/email.ts
 import nodemailer from "nodemailer";
 
-const createTransporter = () =>
-  nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
+const getMailConfig = () => {
+  const user = process.env.EMAIL_USER?.trim();
+  const pass = process.env.EMAIL_PASS?.trim().replace(/^"|"$/g, "");
+  const ownerEmail = process.env.OWNER_EMAIL?.trim();
 
+  if (!user || !pass) {
+    throw new Error("EMAIL_USER or EMAIL_PASS is not configured");
+  }
+
+  return { user, pass, ownerEmail: ownerEmail || user };
+};
+
+const getVerifyLink = (userId: string) => {
+  const serverUrl = (
+    process.env.SERVER_URL || "http://localhost:8080"
+  ).replace(/\/$/, "");
+  return `${serverUrl}/verify-user/${userId}`;
+};
+
+const createTransporter = () => {
+  const { user, pass } = getMailConfig();
+
+  return nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false,
+    auth: { user, pass },
+  });
+};
 export const sendVerificationLinkToOwner = async (
   userId: string,
   name: string,
   email: string,
   companyName: string,
 ) => {
-  const link = `${process.env.SERVER_URL}/verify-user/${userId}`;
+  const link = getVerifyLink(userId);
 
+  const { user: fromEmail, ownerEmail } = getMailConfig();
   const transporter = createTransporter();
 
   await transporter.sendMail({
-    from: `"Maximal Security " <${process.env.EMAIL_USER}>`,
-    to: process.env.OWNER_EMAIL,
-    subject: "New Signup Pending Verification",
+    from: `"Maximal Security " <${fromEmail}>`,
+    to: ownerEmail,    subject: "New Signup Pending Verification",
     html: `
       <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; background-color: #f8f9fa;">
         <h2 style="color: #004175;">Hello Admin,</h2>
@@ -67,12 +87,12 @@ export const sendVerificationLinkToUser = async (
   name: string,
   email: string,
 ) => {
-  const link = `${process.env.SERVER_URL}/verify-user/${userId}`;
+  const link = getVerifyLink(userId);
+  const { user: fromEmail } = getMailConfig();
   const transporter = createTransporter();
 
   await transporter.sendMail({
-    from: `"Maximal Security " <${process.env.EMAIL_USER}>`,
-    to: email,
+    from: `"Maximal Security " <${fromEmail}>`,    to: email,
     subject: "Verify your Maximal Security account",
     html: `
       <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; background-color: #f8f9fa;">
@@ -99,11 +119,11 @@ export const sendTemporaryPasswordEmail = async (
   email: string,
   tempPassword: string,
 ) => {
+  const { user: fromEmail } = getMailConfig();
   const transporter = createTransporter();
 
   await transporter.sendMail({
-    from: `"Maximal Security " <${process.env.EMAIL_USER}>`,
-    to: email,
+    from: `"Maximal Security " <${fromEmail}>`,    to: email,
     subject: "Your Temporary Password - Maximal Security",
     html: `
       <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; background-color: #f8f9fa;">

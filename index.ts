@@ -27,7 +27,7 @@ const allowedOrigins = [
   "https://swiped-dash.vercel.app",
   "https://swipedmax-website.vercel.app",
   "https://swiped-visit-us.vercel.app",
-  "https://access.maximalsecurityservices.com"
+  "https://access.maximalsecurityservices.com",
 ];
 
 console.log("Allowed CORS origins:", allowedOrigins);
@@ -86,6 +86,16 @@ const init = async (): Promise<void> => {
   await apolloServer.start();
 
   await initiateMongoServer();
+
+  const emailConfigured = Boolean(
+    process.env.EMAIL_USER?.trim() && process.env.EMAIL_PASS?.trim(),
+  );
+  console.log(
+    `Email config: ${emailConfigured ? "configured" : "MISSING — emails will fail"}`,
+  );
+  console.log(
+    `Verify link base URL (SERVER_URL): ${process.env.SERVER_URL || "http://localhost:8080"}`,
+  );
 
   app.get("/", (_req: Request, res: Response) => {
     res.status(200).send("Hello from TypeScript Express backend 🚀");
