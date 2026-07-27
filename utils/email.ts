@@ -30,6 +30,44 @@ const createTransporter = () => {
     auth: { user, pass },
   });
 };
+export const sendEmployeeWelcomeEmail = async (
+  userId: string,
+  name: string,
+  email: string,
+  tempPassword: string,
+) => {
+  const link = getVerifyLink(userId);
+  const { user: fromEmail } = getMailConfig();
+  const transporter = createTransporter();
+
+  await transporter.sendMail({
+    from: `"Maximal Security " <${fromEmail}>`,
+    to: email,
+    subject: "Verify your account & temporary password - Maximal Security",
+    html: `
+      <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; background-color: #f8f9fa;">
+        <h2 style="color: #004175;">Hello ${name || "there"},</h2>
+
+        <p>An account has been created for you on <strong>Maximal Security Visitor Management App</strong>.</p>
+
+        <p>Your temporary password is: <strong style="font-size: 16px; color: #004175;">${tempPassword}</strong></p>
+
+        <p>First, verify your email by clicking the button below. Then sign in with your email and temporary password. You will be asked to set a new password on first login.</p>
+
+        <a href="${link}" style="display: inline-block; margin-top: 12px; background-color: #004175; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+          Verify Email
+        </a>
+
+        <p style="margin-top: 30px; font-size: 12px; color: #888;">
+          If you did not expect this email, please ignore it.
+        </p>
+
+        <p style="font-size: 13px; margin-top: 20px;">— Maximal Security Team</p>
+      </div>
+    `,
+  });
+};
+
 export const sendVerificationLinkToOwner = async (
   userId: string,
   name: string,
@@ -43,7 +81,8 @@ export const sendVerificationLinkToOwner = async (
 
   await transporter.sendMail({
     from: `"Maximal Security " <${fromEmail}>`,
-    to: ownerEmail,    subject: "New Signup Pending Verification",
+    to: ownerEmail,
+    subject: "New Signup Pending Verification",
     html: `
       <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; background-color: #f8f9fa;">
         <h2 style="color: #004175;">Hello Admin,</h2>
@@ -92,7 +131,8 @@ export const sendVerificationLinkToUser = async (
   const transporter = createTransporter();
 
   await transporter.sendMail({
-    from: `"Maximal Security " <${fromEmail}>`,    to: email,
+    from: `"Maximal Security " <${fromEmail}>`,
+    to: email,
     subject: "Verify your Maximal Security account",
     html: `
       <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; background-color: #f8f9fa;">
@@ -123,7 +163,8 @@ export const sendTemporaryPasswordEmail = async (
   const transporter = createTransporter();
 
   await transporter.sendMail({
-    from: `"Maximal Security " <${fromEmail}>`,    to: email,
+    from: `"Maximal Security " <${fromEmail}>`,
+    to: email,
     subject: "Your Temporary Password - Maximal Security",
     html: `
       <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; background-color: #f8f9fa;">

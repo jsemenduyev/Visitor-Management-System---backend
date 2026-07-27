@@ -1,8 +1,17 @@
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 import { CompanyModel } from "../../../../database/models/company";
 import { UserModel } from "../../../../database/models/user";
-import { sendVerificationLinkToUser, sendTemporaryPasswordEmail } from "../../../../utils/email";
+import { sendEmployeeWelcomeEmail } from "../../../../utils/email";
 import { MutationCreateUserArgs } from "../../../generated/graphql";
+
+const generateTempPassword = () =>
+  crypto.randomBytes(5).toString("base64url").slice(0, 10);
+
+const canLoginToWebsite = (role?: string | null) => {
+  const normalized = String(role || "").toLowerCase();
+  return normalized === "manager" || normalized === "admin";
+};
 
 export default async (args: MutationCreateUserArgs, ctx: any) => {
   try {
@@ -10,7 +19,6 @@ export default async (args: MutationCreateUserArgs, ctx: any) => {
     const { user } = ctx;
     const company = user.company;
 
-    // Check if employee exists
     const existingEmployee = await UserModel.findOne({ email: input.email });
     if (existingEmployee) {
       return {
@@ -20,8 +28,8 @@ export default async (args: MutationCreateUserArgs, ctx: any) => {
         },
       };
     }
-    const companyData = await CompanyModel.findById({ _id: company }).lean();
 
+    const companyData = await CompanyModel.findById({ _id: company }).lean();
     if (!companyData) {
       return {
         error: {
@@ -30,16 +38,11 @@ export default async (args: MutationCreateUserArgs, ctx: any) => {
         },
       };
     }
+
     if (input.department === "") input.department = null;
 
-    const needsPassword =
-      String(input.role || "").toLowerCase() === "manager" ||
-      String(input.role || "").toLowerCase() === "admin";
-
+    const requiresWebsiteAccess = canLoginToWebsite(input.role);
     let tempPassword = "";
-    if (needsPassword) {
-      tempPassword = Math.random().toString(36).slice(-8); // 8 character random string
-    }
 
     const { password, ...rest } = input as typeof input & {
       password?: string | null;
@@ -48,25 +51,42 @@ export default async (args: MutationCreateUserArgs, ctx: any) => {
     const createPayload: Record<string, any> = {
       ...rest,
       company,
-      status: needsPassword ? true : false, // managers/admins active immediately to login with temp pass
-      needPasswordReset: needsPassword ? true : false,
     };
 
-    if (needsPassword && tempPassword) {
+    if (requiresWebsiteAccess) {
+      tempPassword = generateTempPassword();
       createPayload.password = await bcrypt.hash(tempPassword, 10);
+      createPayload.status = false;
+      createPayload.needPasswordReset = true;
+    } else {
+      createPayload.status = true;
+      createPayload.needPasswordReset = false;
     }
 
     const createdEmployee = await UserModel.create(createPayload);
 
-    if (needsPassword && tempPassword) {
+    if (requiresWebsiteAccess && tempPassword) {
       try {
-        await sendTemporaryPasswordEmail(
-          createdEmployee.firstName || "User",
+        const fullName =
+          `${createdEmployee.firstName ?? ""} ${createdEmployee.lastName ?? ""}`.trim() ||
+          "User";
+
+        await sendEmployeeWelcomeEmail(
+          createdEmployee._id.toString(),
+          fullName,
           createdEmployee.email,
-          tempPassword
+          tempPassword,
         );
       } catch (emailError) {
-        console.error("Failed to send temporary password email:", emailError);
+        console.error("Failed to send employee welcome email:", emailError);
+        return {
+          user: createdEmployee,
+          error: {
+            message:
+              "Employee created but welcome email could not be sent. Please contact support.",
+            code: "EMAIL_SEND_FAILED",
+          },
+        };
       }
     }
 

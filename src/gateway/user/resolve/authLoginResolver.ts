@@ -18,8 +18,7 @@ export default async (_, args: MutationAuthLoginArgs) => {
         user: null,
       };
     }
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch || user.role === "employee") {
+    if (!user.password) {
       return {
         error: {
           message: "Invalid credentials",
@@ -29,6 +28,30 @@ export default async (_, args: MutationAuthLoginArgs) => {
         user: null,
       };
     }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return {
+        error: {
+          message: "Invalid credentials",
+          code: "INVALID_PASSWORD",
+        },
+        token: null,
+        user: null,
+      };
+    }
+
+    if (user.role === "employee") {
+      return {
+        error: {
+          message: "Invalid credentials",
+          code: "INVALID_PASSWORD",
+        },
+        token: null,
+        user: null,
+      };
+    }
+
     if (!user.status) {
       return {
         error: {
