@@ -1,16 +1,111 @@
 import EmployeeTimelineModel from "../../../../database/models/employeeTimeline";
 import VisitorModel from "../../../../database/models/visitor";
 
+const getDataObject = (data: any): Record<string, any> => {
+  if (!data) return {};
+  if (data instanceof Map) return Object.fromEntries(data.entries());
+  if (typeof data === "object") return data;
+  return {};
+};
+
+const getDataField = (data: any, ...keys: string[]) => {
+  const obj = getDataObject(data);
+  for (const key of keys) {
+    const value = obj[key];
+    if (value !== undefined && value !== null && String(value).trim() !== "") {
+      return String(value).trim();
+    }
+  }
+  return "";
+};
+
+const getVisitorFullName = (visitor: any) =>
+  getDataField(visitor?.data, "fullName", "FullName", "name");
+
+const getVisitorContactDetails = (visitor: any) => {
+  const lines: string[] = [];
+
+  if (visitor?.employees && visitor.employees.length > 0) {
+    const host = visitor.employees[0];
+    const hostName = `${host?.firstName || ""} ${host?.lastName || ""}`.trim();
+    if (hostName) lines.push(`Visiting ${hostName}`);
+    if (host?.phone) lines.push(`Host: ${host.phone}`);
+  } else if (visitor?.department?.name) {
+    lines.push(`Visiting ${visitor.department.name}`);
+  }
+
+  const data = visitor?.data;
+  const address = getDataField(
+    data,
+    "address",
+    "Address",
+    "street",
+    "Street",
+    "streetAddress",
+  );
+  const phone = getDataField(
+    data,
+    "phoneNumber",
+    "phone",
+    "Phone",
+    "mobile",
+    "Mobile",
+  );
+  const email = getDataField(
+    data,
+    "emailAddress",
+    "email",
+    "Email",
+  );
+
+  if (address) lines.push(address);
+  if (phone) lines.push(phone);
+  if (email) lines.push(email);
+
+  if (lines.length > 0) return lines.join("\n");
+
+  const company = getDataField(data, "company", "companyName", "Company");
+  return company || "-";
+};
+
+const formatRoleLabel = (role?: string | null) => {
+  const normalized = String(role || "").toLowerCase();
+  if (normalized === "admin") return "Admin";
+  if (normalized === "manager") return "Manager";
+  if (normalized === "employee") return "Employee";
+  return "Visitor";
+};
+
+const getEmployeeContactDetails = (employee: any) => {
+  const lines: string[] = [];
+  if (employee?.phone) lines.push(employee.phone);
+  if (employee?.email) lines.push(employee.email);
+  return lines.length > 0 ? lines.join("\n") : "-";
+};
+
+const parseSignedInDate = (value?: string | null) => {
+  if (!value) return null;
+  const asNumber = Number(value);
+  const date =
+    Number.isFinite(asNumber) && !Number.isNaN(asNumber)
+      ? new Date(asNumber)
+      : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
 export default async (_, args, ctx) => {
   try {
-    const { location, search, signedType = "In", limit = 1000, offset = 0 } = args;
+    const { location, search, signedType, limit = 1000, offset = 0 } = args;
     const { user } = ctx;
+
+    if (!user?.company) {
+      throw new Error("Access Denied. Please login to continue");
+    }
 
     const companyId = user.company;
 
-    // Build common filter
-    const visitorFilter: any = { company: companyId };
-    const employeeFilter: any = { company: companyId };
+    const visitorFilter: Record<string, any> = { company: companyId };
+    const employeeFilter: Record<string, any> = { company: companyId };
 
     if (location) {
       visitorFilter.location = location;
@@ -23,71 +118,61 @@ export default async (_, args, ctx) => {
     }
 
     if (search && search.trim() !== "") {
-      visitorFilter["data.fullName"] = { $regex: search, $options: "i" };
-      employeeFilter["$or"] = [{ "employee.firstName": { $regex: search, $options: "i" } }];
+      visitorFilter["data.fullName"] = { $regex: search.trim(), $options: "i" };
     }
 
-    // Fetch visitors
     const visitors = await VisitorModel.find(visitorFilter)
       .populate("category")
       .populate("department")
       .populate("employees")
       .lean();
 
-    // Fetch employees
-    const employees = await EmployeeTimelineModel.find(employeeFilter)
+    let employees = await EmployeeTimelineModel.find(employeeFilter)
       .populate("employee")
       .lean();
 
-    // Map visitors
-    const mappedVisitors = visitors.map((v: any) => {
-      let contactStr = "-";
-      if (v?.employees && v.employees.length > 0) {
-        const emp = v.employees[0];
-        contactStr = `Visiting ${emp?.firstName || ""} ${emp?.lastName || ""}`.trim();
-      } else if (v?.department?.name) {
-        contactStr = `Visiting ${v.department.name}`;
-      } else if (v?.data?.company) {
-        contactStr = `Visiting ${v.data.company}`;
-      }
+    if (search && search.trim() !== "") {
+      const term = search.trim().toLowerCase();
+      employees = employees.filter((entry: any) => {
+        const firstName = entry?.employee?.firstName?.toLowerCase() || "";
+        const lastName = entry?.employee?.lastName?.toLowerCase() || "";
+        return `${firstName} ${lastName}`.includes(term);
+      });
+    }
 
-      return {
-        _id: v._id,
-        name: v?.anonymize ? "Anonymized Visitor" : v?.data?.fullName || v?.firstName || "-",
-        contact: contactStr,
-        type: v?.category?.name || "Visitor",
-        img: v?.img || "",
-        signedType: v?.signedType,
-        signedIn: v?.signedIn,
-        anonymize: v?.anonymize,
-      };
-    });
+    const mappedVisitors = visitors.map((v: any) => ({
+      _id: v._id,
+      name: v?.anonymize
+        ? "Anonymized Visitor"
+        : getVisitorFullName(v) || "-",
+      contact: v?.anonymize ? "-" : getVisitorContactDetails(v),
+      type: "Visitor",
+      img: v?.img || "",
+      signedType: v?.signedType,
+      signedIn: parseSignedInDate(v?.signedIn),
+      anonymize: v?.anonymize,
+    }));
 
-    // Map employees
-    const mappedEmployees = employees.map((e: any) => {
-      return {
-        _id: e._id,
-        name: `${e?.employee?.firstName || ""} ${e?.employee?.lastName || ""}`.trim() || "-",
-        contact: "Employee", // or department if populated
-        type: "Employee",
-        img: e?.employee?.img || "",
-        signedType: e?.signedType,
-        signedIn: e?.signedIn,
-        anonymize: false,
-      };
-    });
+    const mappedEmployees = employees.map((e: any) => ({
+      _id: e._id,
+      name:
+        `${e?.employee?.firstName || ""} ${e?.employee?.lastName || ""}`.trim() ||
+        "-",
+      contact: getEmployeeContactDetails(e?.employee),
+      type: formatRoleLabel(e?.employee?.role),
+      img: e?.employee?.img || "",
+      signedType: e?.signedType,
+      signedIn: parseSignedInDate(e?.signedIn),
+      anonymize: false,
+    }));
 
-    // Combine and sort
-    let combined = [...mappedVisitors, ...mappedEmployees];
-    combined.sort((a, b) => {
+    const combined = [...mappedVisitors, ...mappedEmployees].sort((a, b) => {
       const dateA = a.signedIn ? new Date(a.signedIn).getTime() : 0;
       const dateB = b.signedIn ? new Date(b.signedIn).getTime() : 0;
-      return dateB - dateA; // descending
+      return dateB - dateA;
     });
 
     const count = combined.length;
-
-    // Apply pagination
     const paginated = combined.slice(offset, offset + limit);
 
     return {

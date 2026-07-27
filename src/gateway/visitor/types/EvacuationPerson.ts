@@ -15,7 +15,14 @@ export const EvacuationPersonType = new GraphQLObjectType({
     type: { type: GraphQLString }, // "Visitor" or "Employee"
     img: { type: GraphQLString },
     signedType: { type: GraphQLString }, // "In" or "Out"
-    signedIn: { type: GraphQLDateTime },
+    signedIn: {
+      type: GraphQLDateTime,
+      resolve: (src) => {
+        if (!src.signedIn) return null;
+        const date = src.signedIn instanceof Date ? src.signedIn : new Date(src.signedIn);
+        return Number.isNaN(date.getTime()) ? null : date;
+      },
+    },
     anonymize: { type: GraphQLBoolean },
   }),
 });
