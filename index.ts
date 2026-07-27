@@ -27,6 +27,7 @@ const allowedOrigins = [
   "https://swiped-dash.vercel.app",
   "https://swipedmax-website.vercel.app",
   "https://swiped-visit-us.vercel.app",
+  "https://access.maximalsecurityservices.com"
 ];
 
 console.log("Allowed CORS origins:", allowedOrigins);
