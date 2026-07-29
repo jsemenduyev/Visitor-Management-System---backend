@@ -84,7 +84,8 @@ Touch 4 files in order:
 | `JWT_SECRET` / `JWT_EXPIRY` | Token signing |
 | `ALLOWED_ORIGINS` | Comma-separated CORS origins |
 | `DEBUG` | Enables GraphQL introspection/playground |
-| `FRONTEND_URL` | Used in approval/rejection email links |
+| `SERVER_URL` | Public API custom domain; used in approval/rejection email links |
 | `DO_SPACES_KEY/SECRET` | DigitalOcean Spaces (S3-compatible) for image uploads |
+| `ASSET_PUBLIC_BASE_URL` | Custom public domain used in URLs returned for DigitalOcean Spaces uploads |
 | `TWILIO_*` | SMS notifications |
 | `SLACK_*` / `MS_*` | OAuth for Slack and Microsoft Teams integrations |

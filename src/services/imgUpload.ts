@@ -1,10 +1,23 @@
 import AWS from "aws-sdk";
+import dotenv from "dotenv";
+import path from "path";
 
 // Configure S3 for DigitalOcean Spaces
+// This module is imported before index.ts executes dotenv.config(), so load the
+// local environment before resolving the public and infrastructure endpoints.
+dotenv.config();
+
+const spacesBucket = process.env.DO_SPACES_BUCKET || "swiped-bucket";
+const spacesEndpoint =
+  process.env.DO_SPACES_ENDPOINT || "https://nyc3.digitaloceanspaces.com";
+const assetPublicBaseUrl = (
+  process.env.ASSET_PUBLIC_BASE_URL ||
+  `https://${spacesBucket}.nyc3.digitaloceanspaces.com`
+).replace(/\/$/, "");
 
 export default async (req, res) => {
   const s3 = new AWS.S3({
-    endpoint: "https://nyc3.digitaloceanspaces.com",
+    endpoint: spacesEndpoint,
     region: "us-east-1", // required for signing
     accessKeyId: process.env.DO_SPACES_KEY,
     secretAccessKey: process.env.DO_SPACES_SECRET,
@@ -12,31 +25,29 @@ export default async (req, res) => {
   });
 
   try {
-    const { filename, filetype } = req.body;
-
-    if (!filename || !filetype) {
-      return res.status(400).json({ error: "Missing filename or filetype" });
+    if (!req.file) {
+      return res.status(400).json({ error: "Missing file" });
     }
 
-    // Generate unique file key
-    const key = `uploads/${Date.now()}_${filename}`;
+    const safeFileName = path
+      .basename(req.file.originalname)
+      .replace(/[^a-zA-Z0-9._-]/g, "_");
+    const key = `uploads/${Date.now()}_${safeFileName || "upload"}`;
 
-    // Pre-signed URL parameters
     const params = {
-      Bucket: "swiped-bucket", // your bucket name
+      Bucket: spacesBucket,
       Key: key,
-      ContentType: filetype,
-      ACL: "public-read", // optional: makes file public
-      Expires: 60, // URL expires in 60 seconds
+      Body: req.file.buffer,
+      ContentType: req.file.mimetype || "application/octet-stream",
+      ACL: "public-read",
     };
 
-    // Get signed URL
-    const signedUrl = await s3.getSignedUrlPromise("putObject", params);
+    await s3.upload(params).promise();
 
-    // Public URL for access
-    const publicUrl = `https://${params.Bucket}.nyc3.digitaloceanspaces.com/${key}`;
+    // Keep DigitalOcean infrastructure behind a custom public asset domain.
+    const publicUrl = `${assetPublicBaseUrl}/${key}`;
 
-    res.json({ signedUrl, publicUrl });
+    res.status(200).json({ publicUrl });
   } catch (err) {
     console.error("Error generating signed URL:", err);
     res.status(500).json({ error: "Failed to generate signed URL" });

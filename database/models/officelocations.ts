@@ -1,12 +1,22 @@
 import { model, Schema } from "mongoose";
+import dotenv from "dotenv";
+
+// This model can load before index.ts configures dotenv.
+dotenv.config();
+
+const tabImageBaseUrl = (
+  process.env.ASSET_PUBLIC_BASE_URL ||
+  "https://swiped-bucket.nyc3.cdn.digitaloceanspaces.com"
+).replace(/\/$/, "");
+
 const tabImgs = [
-  "https://swiped-bucket.nyc3.cdn.digitaloceanspaces.com/tab/Swiped1.png",
-  "https://swiped-bucket.nyc3.cdn.digitaloceanspaces.com/tab/Swiped2.png",
-  "https://swiped-bucket.nyc3.cdn.digitaloceanspaces.com/tab/Swiped3.png",
-  "https://swiped-bucket.nyc3.cdn.digitaloceanspaces.com/tab/Swiped4.png",
-  "https://swiped-bucket.nyc3.cdn.digitaloceanspaces.com/tab/Swiped5.png",
-  "https://swiped-bucket.nyc3.cdn.digitaloceanspaces.com/tab/Swiped6.png",
-  "https://swiped-bucket.nyc3.cdn.digitaloceanspaces.com/tab/Swiped7.png",
+  `${tabImageBaseUrl}/tab/Swiped1.png`,
+  `${tabImageBaseUrl}/tab/Swiped2.png`,
+  `${tabImageBaseUrl}/tab/Swiped3.png`,
+  `${tabImageBaseUrl}/tab/Swiped4.png`,
+  `${tabImageBaseUrl}/tab/Swiped5.png`,
+  `${tabImageBaseUrl}/tab/Swiped6.png`,
+  `${tabImageBaseUrl}/tab/Swiped7.png`,
 ];
 
 const OfficeLocationSchema = new Schema(

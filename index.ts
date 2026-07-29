@@ -2,6 +2,7 @@ import express, { NextFunction, Request, Response } from "express";
 import dotenv from "dotenv";
 import http from "http";
 import cors, { CorsOptions } from "cors";
+import multer from "multer";
 import initializeApolloServer from "./initGraphQLServer";
 import { expressMiddleware } from "@apollo/server/express4";
 import initiateMongoServer from "./database/db";
@@ -18,16 +19,29 @@ dotenv.config();
 
 const app = express();
 const httpServer = http.createServer(app);
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+});
 
 const PORT = Number(process.env.PORT) || 3000;
 
-const allowedOrigins = [
+const defaultAllowedOrigins = [
   "http://localhost:3000",
   "http://localhost:3001",
   "https://swiped-dash.vercel.app",
   "https://swipedmax-website.vercel.app",
   "https://swiped-visit-us.vercel.app",
   "https://access.maximalsecurityservices.com",
+];
+
+const configuredAllowedOrigins = (process.env.ALLOWED_ORIGINS || "")
+  .split(",")
+  .map((origin) => origin.trim().replace(/\/$/, ""))
+  .filter(Boolean);
+
+const allowedOrigins = [
+  ...new Set([...defaultAllowedOrigins, ...configuredAllowedOrigins]),
 ];
 
 console.log("Allowed CORS origins:", allowedOrigins);
@@ -105,7 +119,7 @@ const init = async (): Promise<void> => {
   app.use("/", verifyUserRoute);
   app.use("/", visitUsRouter);
 
-  app.post("/api/get-signed-url", imgUpload);
+  app.post("/api/upload", upload.single("file"), imgUpload);
 
   app.get("/approveVisitor", async (req: Request, res: Response) => {
     try {
@@ -186,6 +200,14 @@ const init = async (): Promise<void> => {
         res.status(403).json({
           success: false,
           message: error.message,
+        });
+        return;
+      }
+
+      if ((error as Error & { code?: string }).code === "LIMIT_FILE_SIZE") {
+        res.status(413).json({
+          success: false,
+          message: "Uploaded file must be 10 MB or smaller",
         });
         return;
       }
