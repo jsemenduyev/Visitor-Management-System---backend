@@ -14,10 +14,12 @@ const getMailConfig = () => {
 };
 
 const getVerifyLink = (userId: string) => {
-  const serverUrl = (
-    process.env.SERVER_URL || "http://localhost:8080"
+  const frontendUrl = (
+    process.env.FRONTEND_URL ||
+    process.env.CLIENT_URL ||
+    "http://localhost:3000"
   ).replace(/\/$/, "");
-  return `${serverUrl}/verify-user/${userId}`;
+  return `${frontendUrl}/verify-user/${userId}`;
 };
 
 const createTransporter = () => {
@@ -59,7 +61,7 @@ export const sendEmployeeWelcomeEmail = async (
         </a>
 
         <p style="margin-top: 30px; font-size: 12px; color: #888;">
-          If you did not expect this email, please ignore it.
+          If you did not expect this email, please disregard this message.
         </p>
 
         <p style="font-size: 13px; margin-top: 20px;">— Maximal Security Team</p>
@@ -111,7 +113,7 @@ export const sendVerificationLinkToOwner = async (
         </a>
 
         <p style="margin-top: 30px; font-size: 12px; color: #888;">
-          If you did not expect this email or believe it was sent in error, please ignore it.
+          If you did not expect this email or believe it was sent in error, please disregard this message.
         </p>
 
         <p style="font-size: 13px; margin-top: 20px;">— Maximal Security Team</p>
@@ -145,7 +147,7 @@ export const sendVerificationLinkToUser = async (
         </a>
 
         <p style="margin-top: 30px; font-size: 12px; color: #888;">
-          If you did not expect this email, please ignore it.
+          If you did not expect this email, please disregard this message.
         </p>
 
         <p style="font-size: 13px; margin-top: 20px;">— Maximal Security Team</p>

@@ -9,15 +9,24 @@ verifyUserRoute.get("/verify-user/:userId", async (req, res) => {
     const user = await UserModel.findById(req.params.userId);
 
     if (!user) {
-      return res.status(404).send("User not found");
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
     }
 
     user.status = true;
     await user.save();
 
-    return res.send("✅ User has been successfully verified.");
+    return res.json({
+      success: true,
+      message: "User has been successfully verified.",
+    });
   } catch (err) {
-    return res.status(500).send("Something went wrong");
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong",
+    });
   }
 });
 

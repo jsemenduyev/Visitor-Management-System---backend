@@ -108,7 +108,7 @@ const init = async (): Promise<void> => {
     `Email config: ${emailConfigured ? "configured" : "MISSING — emails will fail"}`,
   );
   console.log(
-    `Verify link base URL (SERVER_URL): ${process.env.SERVER_URL || "http://localhost:8080"}`,
+    `Verify link base URL (FRONTEND_URL): ${process.env.FRONTEND_URL || process.env.CLIENT_URL || "http://localhost:3000"}`,
   );
 
   app.get("/", (_req: Request, res: Response) => {
