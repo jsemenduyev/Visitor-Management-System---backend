@@ -1,30 +1,36 @@
 import { Types } from "mongoose";
 import DepartmentModel from "../../../../database/models/department";
-import OfficeLocationModel from "../../../../database/models/officelocations";
 import PreRegisterVisitorModel from "../../../../database/models/preRegisterVisitor";
 import { UserModel } from "../../../../database/models/user";
 import VisitorModel from "../../../../database/models/visitor";
 import visitorCategory from "../../../../database/models/visitorCategory";
-import { sendVisitorApprovalEmail } from "../../../../utils/approvalEmail";
-import { sendVisitorArrivalEmail } from "../../../../utils/VisitorEmail";
+import { normalizeVisitorData } from "../../../../utils/visitorData";
 import { MutationCreateVisitorArgs } from "../../../generated/graphql";
-import { sendTwilioMessage } from "../../../services/sendMessage";
 
 export default async (_: any, args: MutationCreateVisitorArgs) => {
   try {
     const { input } = args;
+    const normalizedData = normalizeVisitorData(input.data);
 
     // ✅ Remove pre-register entry
-    if (input.data?.fullName) {
+    if (normalizedData?.fullName) {
       await PreRegisterVisitorModel.findOneAndDelete({
-        "data.fullName": input.data.fullName,
+        "data.fullName": normalizedData.fullName,
       });
     }
 
     // ✅ Prevent duplicate signed-in visitors based on phone or email
     const duplicateConditions: any[] = [];
-    if (input.data?.phoneNumber) duplicateConditions.push({ "data.phoneNumber": input.data.phoneNumber });
-    if (input.data?.emailAddress) duplicateConditions.push({ "data.emailAddress": input.data.emailAddress });
+    if (normalizedData?.phoneNumber) {
+      duplicateConditions.push({
+        "data.phoneNumber": normalizedData.phoneNumber,
+      });
+    }
+    if (normalizedData?.emailAddress) {
+      duplicateConditions.push({
+        "data.emailAddress": normalizedData.emailAddress,
+      });
+    }
 
     if (duplicateConditions.length > 0) {
       const existingVisitor = await VisitorModel.findOne({
@@ -50,13 +56,6 @@ export default async (_: any, args: MutationCreateVisitorArgs) => {
       };
     }
 
-    // ✅ Location settings (for includeAllVisitorResponses)
-    const location = await OfficeLocationModel.findById(input.location).lean();
-    const includeResponses = location?.approvals?.includeAllVisitorResponses ?? false;
-    const visitorData = includeResponses && input.data ? (input.data as Record<string, any>) : undefined;
-
-    let department: any = null;
-    let notifyTargets: any[] = [];
     let employees: Types.ObjectId[] = [];
 
     /**
@@ -65,7 +64,7 @@ export default async (_: any, args: MutationCreateVisitorArgs) => {
      * -----------------------------------
      */
     if (input.department) {
-      department = await DepartmentModel.findById(input.department)
+      const department = await DepartmentModel.findById(input.department)
         .populate("user")
         .lean();
 
@@ -78,8 +77,7 @@ export default async (_: any, args: MutationCreateVisitorArgs) => {
         };
       }
 
-      notifyTargets = department.user || [];
-      employees = notifyTargets.map((u: any) => u._id);
+      employees = (department.user || []).map((u: any) => u._id);
     } else if (input.employee) {
       /**
        * -----------------------------------
@@ -97,94 +95,27 @@ export default async (_: any, args: MutationCreateVisitorArgs) => {
         };
       }
 
-      notifyTargets = [employee];
       employees = [employee._id];
     }
 
     /**
      * -----------------------------------
-     * Notification helper
-     * -----------------------------------
-     */
-    const notifyUsers = async (
-      users: any[],
-      type: "arrival" | "approval",
-      visitorId: string,
-    ) => {
-      if (!users.length) return;
-
-      await Promise.all(
-        users.map(async (user) => {
-          // Email
-          if (user.notificationPreference?.includes("Email")) {
-            if (type === "arrival") {
-              await sendVisitorArrivalEmail(
-                input.data.fullName,
-                category.name,
-                new Date().toLocaleString(),
-                department?.name || user.name || "N/A",
-                input.img,
-                user.email,
-                visitorData,
-              );
-            } else {
-              await sendVisitorApprovalEmail(
-                input.data.fullName,
-                category.name,
-                new Date().toLocaleString(),
-                department?.name || user.name || "N/A",
-                input.img,
-                `${process.env.SERVER_URL}/approveVisitor?visitorId=${visitorId}`,
-                `${process.env.SERVER_URL}/rejectVisitor?visitorId=${visitorId}`,
-                user.email,
-                visitorData,
-              );
-            }
-          }
-
-          // SMS
-          if (user.phone && user.notificationPreference?.includes("SMS")) {
-            const msg =
-              type === "arrival"
-                ? `Hello, A new visitor, ${input.data.fullName}${
-                    input.data.companyName ? ` (${input.data.companyName})` : ""
-                  }, is here to meet you. — Maximal Security`
-                : `Hello, A new visitor, ${input.data.fullName}, requires approval. Please check your email. — Maximal Security`;
-
-            await sendTwilioMessage(user.phone, msg);
-          }
-        }),
-      );
-    };
-
-    /**
-     * -----------------------------------
      * Create visitor payload
+     * Notifications are sent from updateVisitor (after photo is attached).
      * -----------------------------------
      */
     const newInput = {
       ...input,
+      data: normalizedData,
       company: category.company,
       employees,
       signedType: category.approval ? "Pending" : "In",
       // Client-provided ISO datetime (online: now; offline sync: original local time)
       signedIn: input.signedIn,
+      notificationSent: false,
     };
 
     const visitor = await VisitorModel.create(newInput);
-
-    /**
-     * -----------------------------------
-     * Notifications
-     * -----------------------------------
-     */
-    if (notifyTargets.length > 0) {
-      await notifyUsers(
-        notifyTargets,
-        category.approval ? "approval" : "arrival",
-        visitor._id.toString(),
-      );
-    }
 
     return { visitor };
   } catch (error: any) {

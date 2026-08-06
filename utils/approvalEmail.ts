@@ -60,7 +60,11 @@ New visitor <span style="font-weight: bold;">${visitorName}</span> requires appr
             <a href="${rejectLink}" style="background-color: #555; color: white; padding: 10px 24px; border-radius: 4px; text-decoration: none; font-weight: bold;">Reject</a>
           </div>
 
-          <img src="${photoUrl}" alt="Visitor photo" style="border-radius: 50%; width: 100px; height: 100px; object-fit: cover;" />
+          ${
+            photoUrl
+              ? `<img src="${photoUrl}" alt="Visitor photo" style="border-radius: 50%; width: 100px; height: 100px; object-fit: cover;" />`
+              : ""
+          }
 
           <p style="margin: 15px 0 0; font-size: 16px;">${visitType}</p>
           <p style="margin: 4px 0; font-size: 14px; color: #000;">

@@ -8,6 +8,10 @@ import VisitorModel from "../../database/models/visitor";
 import DepartmentModel from "../../database/models/department";
 import { sendVisitorArrivalEmail } from "../../utils/VisitorEmail";
 import { sendVisitorApprovalEmail } from "../../utils/approvalEmail";
+import {
+  normalizeVisitorData,
+  resolveVisitorFullName,
+} from "../../utils/visitorData";
 import { sendTwilioMessage } from "./sendMessage";
 import { Types } from "mongoose";
 
@@ -178,9 +182,15 @@ visitUsRouter.post("/submitVisitor", async (req, res) => {
       return res.status(401).json({ message: "Invalid token" });
     }
 
-    if (input.data?.fullName) {
+    if (input.data) {
+      input.data = normalizeVisitorData(input.data);
+    }
+
+    const visitorFullName = resolveVisitorFullName(input.data);
+
+    if (visitorFullName) {
       await PreRegisterVisitorModel.findOneAndDelete({
-        "data.fullName": input.data.fullName,
+        "data.fullName": visitorFullName,
       });
     }
 
@@ -301,7 +311,7 @@ visitUsRouter.post("/submitVisitor", async (req, res) => {
             if (type === "arrival") {
               console.log("input.data", input);
               await sendVisitorArrivalEmail(
-                input.data?.fullName,
+                visitorFullName,
                 category.name,
                 new Date().toLocaleString(),
                 hostLabel,
@@ -311,7 +321,7 @@ visitUsRouter.post("/submitVisitor", async (req, res) => {
               );
             } else {
               await sendVisitorApprovalEmail(
-                input.data?.fullName,
+                visitorFullName,
                 category.name,
                 new Date().toLocaleString(),
                 hostLabel,
@@ -327,10 +337,10 @@ visitUsRouter.post("/submitVisitor", async (req, res) => {
           if (user.phone && user.notificationPreference?.includes("SMS")) {
             const msg =
               type === "arrival"
-                ? `Hello, A new visitor, ${input.data?.fullName}${
+                ? `Hello, A new visitor, ${visitorFullName}${
                     input.data?.companyName ? ` (${input.data.companyName})` : ""
                   }, is here to meet you. — Maximal Security`
-                : `Hello, A new visitor, ${input.data?.fullName}, requires approval. Please check your email. — Maximal Security`;
+                : `Hello, A new visitor, ${visitorFullName}, requires approval. Please check your email. — Maximal Security`;
 
             await sendTwilioMessage(user.phone, msg);
           }

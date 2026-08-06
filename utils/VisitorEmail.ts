@@ -63,7 +63,11 @@ export const sendVisitorArrivalEmail = async (
             Please proceed to greet your guest.
           </p>
 
-      <img src="${photoUrl}" alt="Visitor photo" style="border-radius: 50%; width: 100px; height: 100px; object-fit: cover; margin-bottom: 15px;" />
+      ${
+        photoUrl
+          ? `<img src="${photoUrl}" alt="Visitor photo" style="border-radius: 50%; width: 100px; height: 100px; object-fit: cover; margin-bottom: 15px;" />`
+          : ""
+      }
           <p style="margin: 15px 0 0; font-size: 16px;">${visitType}</p>
 
       <p style="margin: 0; font-size: 14px; color: #000;">

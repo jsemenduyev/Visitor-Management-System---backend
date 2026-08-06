@@ -65,6 +65,7 @@ const VisitorCategorySchema = new mongoose.Schema<IVisitorCategory>(
       default: [
         {
           label: "Full Name",
+          name: "fullName",
           type: "text",
           required: true,
           enabled: true,

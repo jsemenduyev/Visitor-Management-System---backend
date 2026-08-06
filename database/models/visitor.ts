@@ -77,6 +77,10 @@ const VisitorSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    notificationSent: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true },
 );
