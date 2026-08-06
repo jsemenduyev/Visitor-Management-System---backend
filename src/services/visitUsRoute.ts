@@ -299,6 +299,7 @@ visitUsRouter.post("/submitVisitor", async (req, res) => {
               "N/A";
 
             if (type === "arrival") {
+              console.log("input.data", input);
               await sendVisitorArrivalEmail(
                 input.data?.fullName,
                 category.name,
