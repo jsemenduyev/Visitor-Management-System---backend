@@ -47,6 +47,9 @@ export const officeLocationsMutation = {
       lng: {
         type: GraphQLString,
       },
+      copyFromLocationId: {
+        type: GraphQLID,
+      },
     },
     resolve: (_, args, ctx) =>
       isAdminOrManager(args, ctx, AddOfficeLocationResolver),
