@@ -35,6 +35,7 @@ export const sendVisitorApprovalEmail = async (
   approveLink: string,
   rejectLink: string,
   toEmail: string,
+  deviceName: string,
   visitorData?: Record<string, any>,
 ) => {
   const transporter = nodemailer.createTransport({
@@ -78,7 +79,7 @@ New visitor <span style="font-weight: bold;">${visitorName}</span> requires appr
 
           <p style="margin: 25px 0 0; font-size: 14px; color: #777;">
             Thanks<br />
-            Front Desk, Head Office
+            ${deviceName || "Front Desk"}, Head Office
           </p>
         </td>
       </tr>

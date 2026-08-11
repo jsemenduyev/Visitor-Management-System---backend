@@ -317,6 +317,7 @@ visitUsRouter.post("/submitVisitor", async (req, res) => {
                 hostLabel,
                 input.img,
                 user.email,
+                input.signedInDevice || "QR",
                 visitorData,
               );
             } else {
@@ -329,6 +330,7 @@ visitUsRouter.post("/submitVisitor", async (req, res) => {
                 `${process.env.SERVER_URL}/approveVisitor?visitorId=${visitorId}`,
                 `${process.env.SERVER_URL}/rejectVisitor?visitorId=${visitorId}`,
                 user.email,
+                input.signedInDevice || "QR",
                 visitorData,
               );
             }

@@ -140,7 +140,7 @@ export const sendVerificationLinkToUser = async (
       <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; background-color: #f8f9fa;">
         <h2 style="color: #004175;">Hello ${name || "there"},</h2>
 
-        <p>An account has been created for you on <strong>Maximal Security</strong>. Please verify your email to activate your account and sign in.</p>
+        <p>An account has been created for you on <strong>Maximal Security Visitor Management App</strong>. Please verify your email to activate your account and sign in.</p>
 
         <a href="${link}" style="display: inline-block; margin-top: 12px; background-color: #004175; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
           Verify Email
@@ -172,7 +172,7 @@ export const sendTemporaryPasswordEmail = async (
       <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; background-color: #f8f9fa;">
         <h2 style="color: #004175;">Hello ${name || "there"},</h2>
 
-        <p>An account has been created for you on <strong>Maximal Security</strong>.</p>
+        <p>An account has been created for you on <strong>Maximal Security Visitor Management App</strong>.</p>
         
         <p>Your temporary password is: <strong style="font-size: 16px; color: #004175;">${tempPassword}</strong></p>
 
