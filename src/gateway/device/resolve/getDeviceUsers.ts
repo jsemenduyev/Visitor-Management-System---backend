@@ -27,6 +27,7 @@ export default async (_: any, args: { sessionKey: string; search: string }) => {
     let query: any = {
       company: device.company,
       location: device.location,
+      isArchived: { $ne: true },
     };
     if (search && search.trim() !== "") {
       query = {
