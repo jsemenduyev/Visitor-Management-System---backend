@@ -2,21 +2,30 @@ import twilio from "twilio";
 import { CompanyModel } from "../../database/models/company";
 import axios from "axios";
 export const sendTwilioMessage = async (to, message) => {
-  const client = twilio(
-    process.env.TWILIO_ACCOUNT_SID,
-    process.env.TWILIO_AUTH_TOKEN,
-  );
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  const from = process.env.TWILIO_PHONE_NUMBER;
+
+  console.log("SMS log sending", { to, from, hasSid: !!accountSid, hasToken: !!authToken });
+
+  if (!accountSid || !authToken || !from) {
+    const error = "Twilio env missing (TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN / TWILIO_PHONE_NUMBER)";
+    console.error("SMS log error:", error);
+    return { success: false, error };
+  }
+
+  const client = twilio(accountSid, authToken);
   try {
     const response = await client.messages.create({
       body: message,
-      from: process.env.TWILIO_PHONE_NUMBER,
+      from,
       to,
     });
 
-    console.log(`✅ Message sent to ${to}: SID ${response.sid}`);
+    console.log("SMS log success", { to, sid: response.sid, status: response.status });
     return { success: true, sid: response.sid };
   } catch (error) {
-    console.error(`❌ Failed to send message to ${to}:`, error.message);
+    console.error("SMS log error:", error.message, { to, from });
     return { success: false, error: error.message };
   }
 };

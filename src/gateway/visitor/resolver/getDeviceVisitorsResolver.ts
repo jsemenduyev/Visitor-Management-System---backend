@@ -1,12 +1,13 @@
 import VisitorModel from "../../../../database/models/visitor";
+import { resolveVisitorFullName } from "../../../../utils/visitorData";
 
 export default async (_, args) => {
   try {
-    const { search, company, signedType, remembered,location } = args;
-  
+    const { search, company, signedType, remembered, location } = args;
+
     const filter: any = {
       company: company,
-      location
+      location,
     };
 
     if (search) {
@@ -19,9 +20,23 @@ export default async (_, args) => {
       filter.signedType = signedType;
     }
 
-    const visitors = await VisitorModel.find(filter).lean();
+    let visitors = await VisitorModel.find(filter)
+      .sort({ updatedAt: -1 })
+      .limit(search ? 50 : 200)
+      .lean();
 
-    const count = await VisitorModel.countDocuments();
+    // Autocomplete should show one entry per remembered visitor name.
+    if (search && remembered) {
+      const seen = new Set<string>();
+      visitors = visitors.filter((visitor) => {
+        const name = resolveVisitorFullName(visitor.data).toLowerCase();
+        if (!name || seen.has(name)) return false;
+        seen.add(name);
+        return true;
+      });
+    }
+
+    const count = await VisitorModel.countDocuments(filter);
 
     return { visitor: visitors, count };
   } catch (error) {

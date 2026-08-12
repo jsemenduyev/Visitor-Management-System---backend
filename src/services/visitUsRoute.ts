@@ -301,51 +301,74 @@ visitUsRouter.post("/submitVisitor", async (req, res) => {
 
       await Promise.all(
         users.map(async (user) => {
-          if (user.notificationPreference?.includes("Email")) {
-            const hostLabel =
-              department?.name ||
-              [user.firstName, user.lastName].filter(Boolean).join(" ") ||
-              user.name ||
-              "N/A";
+          const prefs = user.notificationPreference || [];
+          console.log("SMS log host", {
+            email: user.email,
+            phone: user.phone || null,
+            prefs,
+            type,
+          });
 
-            if (type === "arrival") {
-              console.log("input.data", input);
-              await sendVisitorArrivalEmail(
-                visitorFullName,
-                category.name,
-                new Date().toLocaleString(),
-                hostLabel,
-                input.img,
-                user.email,
-                input.signedInDevice || "QR",
-                visitorData,
-              );
-            } else {
-              await sendVisitorApprovalEmail(
-                visitorFullName,
-                category.name,
-                new Date().toLocaleString(),
-                hostLabel,
-                input.img,
-                `${process.env.SERVER_URL}/approveVisitor?visitorId=${visitorId}`,
-                `${process.env.SERVER_URL}/rejectVisitor?visitorId=${visitorId}`,
-                user.email,
-                input.signedInDevice || "QR",
-                visitorData,
+          if (prefs.includes("Email")) {
+            try {
+              const hostLabel =
+                department?.name ||
+                [user.firstName, user.lastName].filter(Boolean).join(" ") ||
+                user.name ||
+                "N/A";
+
+              if (type === "arrival") {
+                console.log("input.data", input);
+                await sendVisitorArrivalEmail(
+                  visitorFullName,
+                  category.name,
+                  new Date().toLocaleString(),
+                  hostLabel,
+                  input.img,
+                  user.email,
+                  input.signedInDevice || "QR",
+                  visitorData,
+                );
+              } else {
+                await sendVisitorApprovalEmail(
+                  visitorFullName,
+                  category.name,
+                  new Date().toLocaleString(),
+                  hostLabel,
+                  input.img,
+                  `${process.env.SERVER_URL}/approveVisitor?visitorId=${visitorId}`,
+                  `${process.env.SERVER_URL}/rejectVisitor?visitorId=${visitorId}`,
+                  user.email,
+                  input.signedInDevice || "QR",
+                  visitorData,
+                );
+              }
+            } catch (emailError: any) {
+              console.error(
+                "Email notification failed (SMS will still send):",
+                emailError?.message || emailError,
               );
             }
           }
 
-          if (user.phone && user.notificationPreference?.includes("SMS")) {
-            const msg =
-              type === "arrival"
-                ? `Hello, A new visitor, ${visitorFullName}${
-                    input.data?.companyName ? ` (${input.data.companyName})` : ""
-                  }, is here to meet you. — Maximal Security`
-                : `Hello, A new visitor, ${visitorFullName}, requires approval. Please check your email. — Maximal Security`;
-
-            await sendTwilioMessage(user.phone, msg);
+          if (!prefs.includes("SMS")) {
+            console.log("SMS log skipped: SMS preference not enabled", user.email);
+            return;
           }
+
+          if (!user.phone) {
+            console.log("SMS log skipped: no phone on user", user.email);
+            return;
+          }
+
+          const msg =
+            type === "arrival"
+              ? `Hello, A new visitor, ${visitorFullName}${
+                  input.data?.companyName ? ` (${input.data.companyName})` : ""
+                }, is here to meet you. — Maximal Security`
+              : `Hello, A new visitor, ${visitorFullName}, requires approval. Please check your email. — Maximal Security`;
+
+          await sendTwilioMessage(user.phone, msg);
         }),
       );
     };

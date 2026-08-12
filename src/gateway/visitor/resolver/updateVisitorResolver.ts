@@ -129,7 +129,10 @@ async function notifyVisitorHosts(visitor: any) {
     }).lean();
   }
 
-  if (!notifyTargets.length) return;
+  if (!notifyTargets.length) {
+    console.log("SMS log skipped: no host users to notify");
+    return;
+  }
 
   const location = visitor.location
     ? await OfficeLocationModel.findById(visitor.location).lean()
@@ -150,44 +153,67 @@ async function notifyVisitorHosts(visitor: any) {
 
   await Promise.all(
     notifyTargets.map(async (user) => {
-      if (user.notificationPreference?.includes("Email")) {
-        const hostLabel = hostLabelForUser(user, department?.name);
+      const prefs = user.notificationPreference || [];
+      console.log("SMS log host", {
+        email: user.email,
+        phone: user.phone || null,
+        prefs,
+        type,
+      });
 
-        if (type === "arrival") {
-          await sendVisitorArrivalEmail(
-            visitorName,
-            category.name,
-            new Date().toLocaleString(),
-            hostLabel,
-            photoUrl,
-            user.email,
-            visitorData,
-          );
-        } else {
-          await sendVisitorApprovalEmail(
-            visitorName,
-            category.name,
-            new Date().toLocaleString(),
-            hostLabel,
-            photoUrl,
-            `${process.env.SERVER_URL}/approveVisitor?visitorId=${visitorId}`,
-            `${process.env.SERVER_URL}/rejectVisitor?visitorId=${visitorId}`,
-            user.email,
-            visitorData,
+      if (prefs.includes("Email")) {
+        try {
+          const hostLabel = hostLabelForUser(user, department?.name);
+
+          if (type === "arrival") {
+            await sendVisitorArrivalEmail(
+              visitorName,
+              category.name,
+              new Date().toLocaleString(),
+              hostLabel,
+              photoUrl,
+              user.email,
+              visitorData,
+            );
+          } else {
+            await sendVisitorApprovalEmail(
+              visitorName,
+              category.name,
+              new Date().toLocaleString(),
+              hostLabel,
+              photoUrl,
+              `${process.env.SERVER_URL}/approveVisitor?visitorId=${visitorId}`,
+              `${process.env.SERVER_URL}/rejectVisitor?visitorId=${visitorId}`,
+              user.email,
+              visitorData,
+            );
+          }
+        } catch (emailError: any) {
+          console.error(
+            "Email notification failed (SMS will still send):",
+            emailError?.message || emailError,
           );
         }
       }
 
-      if (user.phone && user.notificationPreference?.includes("SMS")) {
-        const msg =
-          type === "arrival"
-            ? `Hello, A new visitor, ${visitorName}${
-                dataObj.companyName ? ` (${dataObj.companyName})` : ""
-              }, is here to meet you. — Maximal Security`
-            : `Hello, A new visitor, ${visitorName}, requires approval. Please check your email. — Maximal Security`;
-
-        await sendTwilioMessage(user.phone, msg);
+      if (!prefs.includes("SMS")) {
+        console.log("SMS log skipped: SMS preference not enabled", user.email);
+        return;
       }
+
+      if (!user.phone) {
+        console.log("SMS log skipped: no phone on user", user.email);
+        return;
+      }
+
+      const msg =
+        type === "arrival"
+          ? `Hello, A new visitor, ${visitorName}${
+              dataObj.companyName ? ` (${dataObj.companyName})` : ""
+            }, is here to meet you. — Maximal Security`
+          : `Hello, A new visitor, ${visitorName}, requires approval. Please check your email. — Maximal Security`;
+
+      await sendTwilioMessage(user.phone, msg);
     }),
   );
 }
