@@ -12,6 +12,19 @@ export default async (_: any, args: MutationCreateVisitorArgs) => {
     const { input } = args;
     const normalizedData = normalizeVisitorData(input.data);
 
+    // Validate the category before checking duplicates so the duplicate check
+    // can be limited to the kiosk's location. A visitor signed in elsewhere
+    // must not prevent a check-in at this location.
+    const category = await visitorCategory.findById(input.category).lean();
+    if (!category) {
+      return {
+        error: {
+          message: "Invalid visitor category",
+          code: "INVALID_CATEGORY",
+        },
+      };
+    }
+
     // ✅ Remove pre-register entry
     if (normalizedData?.fullName) {
       await PreRegisterVisitorModel.findOneAndDelete({
@@ -36,6 +49,7 @@ export default async (_: any, args: MutationCreateVisitorArgs) => {
       const existingVisitor = await VisitorModel.findOne({
         $or: duplicateConditions,
         signedType: "In",
+        location: category.location,
       });
 
       if (existingVisitor) {
@@ -43,17 +57,6 @@ export default async (_: any, args: MutationCreateVisitorArgs) => {
           error: { message: "Visitor already exists", code: "ALREADY_EXISTS" },
         };
       }
-    }
-
-    // ✅ Category
-    const category = await visitorCategory.findById(input.category).lean();
-    if (!category) {
-      return {
-        error: {
-          message: "Invalid visitor category",
-          code: "INVALID_CATEGORY",
-        },
-      };
     }
 
     let employees: Types.ObjectId[] = [];
