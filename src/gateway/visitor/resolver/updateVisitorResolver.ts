@@ -11,6 +11,7 @@ import {
 } from "../../../../utils/visitorData";
 import { MutationUpdateVisitorArgs } from "../../../generated/graphql";
 import { sendTwilioMessage } from "../../../services/sendMessage";
+import { formatEmailTimestamp } from "../../../../utils/formatEmailTimestamp";
 
 const hostLabelForUser = (user: any, departmentName?: string) =>
   departmentName ||
@@ -169,7 +170,7 @@ async function notifyVisitorHosts(visitor: any) {
             await sendVisitorArrivalEmail(
               visitorName,
               category.name,
-              new Date().toLocaleString(),
+              formatEmailTimestamp(),
               hostLabel,
               photoUrl,
               user.email,
@@ -180,7 +181,7 @@ async function notifyVisitorHosts(visitor: any) {
             await sendVisitorApprovalEmail(
               visitorName,
               category.name,
-              new Date().toLocaleString(),
+              formatEmailTimestamp(),
               hostLabel,
               photoUrl,
               `${process.env.SERVER_URL}/approveVisitor?visitorId=${visitorId}`,

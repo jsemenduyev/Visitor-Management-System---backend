@@ -14,6 +14,7 @@ import {
 } from "../../utils/visitorData";
 import { sendTwilioMessage } from "./sendMessage";
 import { Types } from "mongoose";
+import { formatEmailTimestamp } from "../../utils/formatEmailTimestamp";
 
 const visitUsRouter = express.Router();
 
@@ -322,7 +323,7 @@ visitUsRouter.post("/submitVisitor", async (req, res) => {
                 await sendVisitorArrivalEmail(
                   visitorFullName,
                   category.name,
-                  new Date().toLocaleString(),
+                  formatEmailTimestamp(),
                   hostLabel,
                   input.img,
                   user.email,
@@ -333,7 +334,7 @@ visitUsRouter.post("/submitVisitor", async (req, res) => {
                 await sendVisitorApprovalEmail(
                   visitorFullName,
                   category.name,
-                  new Date().toLocaleString(),
+                  formatEmailTimestamp(),
                   hostLabel,
                   input.img,
                   `${process.env.SERVER_URL}/approveVisitor?visitorId=${visitorId}`,
