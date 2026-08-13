@@ -17,10 +17,11 @@ export default async (_, args: QueryGetPreVisitorsArgs) => {
       location,
     } = args;
 
-    const filter: any = {
-      company: company,
-      location,
-    };
+    const filter: any = { company };
+    // "All locations" sends null, so leave location out of the query.
+    if (location) {
+      filter.location = location;
+    }
     // Date filter
     if (startDate && endDate) {
       const start = moment

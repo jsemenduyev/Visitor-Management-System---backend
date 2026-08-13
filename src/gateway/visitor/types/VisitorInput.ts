@@ -26,6 +26,8 @@ export const VisitorInput = new GraphQLInputObjectType({
     signedInDevice: {
       type: DeviceType,
     },
+    deviceId: { type: GraphQLString },
+    deviceName: { type: GraphQLString },
     signedOutDevice: {
       type: DeviceType,
     },

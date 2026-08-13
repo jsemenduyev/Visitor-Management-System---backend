@@ -16,7 +16,7 @@ export const PreRegisterQuery = {
     type: PreRegisterListType,
     args: {
       location: {
-        type: new GraphQLNonNull(GraphQLID),
+        type: GraphQLID,
       },
       startDate: {
         type: GraphQLString,

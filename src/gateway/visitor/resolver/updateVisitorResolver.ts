@@ -173,6 +173,7 @@ async function notifyVisitorHosts(visitor: any) {
               hostLabel,
               photoUrl,
               user.email,
+              visitor.deviceName || visitor.deviceId || visitor.signedInDevice || "QR",
               visitorData,
             );
           } else {
@@ -185,6 +186,7 @@ async function notifyVisitorHosts(visitor: any) {
               `${process.env.SERVER_URL}/approveVisitor?visitorId=${visitorId}`,
               `${process.env.SERVER_URL}/rejectVisitor?visitorId=${visitorId}`,
               user.email,
+              visitor.deviceName || visitor.deviceId || visitor.signedInDevice || "QR",
               visitorData,
             );
           }

@@ -33,7 +33,7 @@ export const sendVisitorArrivalEmail = async (
   hostName: string,
   photoUrl: string,
   toEmail: string,
-  deviceName: string,
+  deviceId: string,
   visitorData?: Record<string, any>,
 ) => {
   const transporter = nodemailer.createTransport({
@@ -80,7 +80,7 @@ export const sendVisitorArrivalEmail = async (
 
       <p style="margin: 25px 0 0; font-size: 14px; color: #777;">
         Thanks<br />
-        ${deviceName || "Front Desk"}, Head Office
+        ${deviceId}, Head Office
       </p>
     </td>
   </tr>

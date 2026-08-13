@@ -19,7 +19,7 @@ export default async (_: any, args: { sessionKey: string }) => {
       .populate("company")
       .populate("location")
       .lean();
-console.log("deviceMeResolver: device found", device);
+
     if (!device) {
       return {
         error: {
@@ -28,6 +28,11 @@ console.log("deviceMeResolver: device found", device);
         },
       };
     }
+
+    console.log("Visitor device:", {
+      visitor: device.deviceTypes?.join(", ") || "visitor",
+      deviceName: device.deviceName,
+    });
 
     // session is valid
     return { device };

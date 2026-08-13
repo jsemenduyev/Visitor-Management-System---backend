@@ -46,6 +46,8 @@ export const VisitorType = new GraphQLObjectType({
     signedOut: { type: GraphQLDateTime },
     signedOutDevice: { type: GraphQLString },
     signedInDevice: { type: GraphQLString },
+    deviceId: { type: GraphQLString },
+    deviceName: { type: GraphQLString },
     location: {
       type: OfficeLocation,
     },

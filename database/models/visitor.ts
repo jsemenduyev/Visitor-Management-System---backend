@@ -46,6 +46,12 @@ const VisitorSchema = new mongoose.Schema(
       enum: ["Web", "Mobile", "QR"],
       default: "Web",
     },
+    deviceId: {
+      type: String,
+    },
+    deviceName: {
+      type: String,
+    },
     signedOut: {
       type: String,
     },
