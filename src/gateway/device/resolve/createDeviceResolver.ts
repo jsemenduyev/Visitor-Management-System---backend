@@ -1,6 +1,4 @@
 import DeviceModel from "../../../../database/models/devices";
-import DepartmentModel from "../../../../database/models/department";
-import VisitorCategoryModel from "../../../../database/models/visitorCategory";
 import { MutationCreateDeviceArgs } from "../../../generated/graphql";
 
 // helper to generate random 6-char alphanumeric string
@@ -13,36 +11,9 @@ function generateDeviceId(length = 6) {
   return result;
 }
 
-export default async (args: MutationCreateDeviceArgs, ctx: any) => {
+export default async (args: MutationCreateDeviceArgs) => {
   try {
     const { input } = args;
-
-    const [departments, visitorCategories] = await Promise.all([
-      DepartmentModel.countDocuments({
-        _id: { $in: input.department ?? [] },
-        company: ctx.user.company,
-        createdBy: ctx.user._id,
-        location: input.location,
-      }),
-      VisitorCategoryModel.countDocuments({
-        _id: { $in: input.categoryType ?? [] },
-        company: ctx.user.company,
-        createdBy: ctx.user._id,
-        location: input.location,
-      }),
-    ]);
-
-    if (
-      departments !== (input.department?.length ?? 0) ||
-      visitorCategories !== (input.categoryType?.length ?? 0)
-    ) {
-      return {
-        error: {
-          message: "Departments and visitor categories must belong to your admin workspace",
-          code: "FORBIDDEN_REFERENCE",
-        },
-      };
-    }
 
     // check if device already exists by name
     const deviceExist = await DeviceModel.findOne({
@@ -73,8 +44,6 @@ export default async (args: MutationCreateDeviceArgs, ctx: any) => {
     const newInput = {
       ...input,
       deviceId,
-      company: ctx.user.company,
-      createdBy: ctx.user._id,
     };
 
     const device = await DeviceModel.create(newInput);

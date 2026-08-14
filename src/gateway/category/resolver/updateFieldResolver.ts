@@ -1,6 +1,6 @@
 import visitorCategory from "../../../../database/models/visitorCategory";
 import { MutationUpdateFieldArgs } from "../../../generated/graphql";
-export default async (_: any, args: MutationUpdateFieldArgs, ctx: any) => {
+export default async (_: any, args: MutationUpdateFieldArgs) => {
   try {
     const { categoryId, fieldId, required, enabled, clearResponseAfterEachVisit } = args;
 
@@ -8,11 +8,7 @@ export default async (_: any, args: MutationUpdateFieldArgs, ctx: any) => {
       throw new Error("CategoryId and FieldId are required");
     }
 
-    const category = await visitorCategory.findOne({
-      _id: categoryId,
-      company: ctx.user.company,
-      createdBy: ctx.user._id,
-    });
+    const category = await visitorCategory.findById(categoryId);
     if (!category) {
       throw new Error("Category not found");
     }

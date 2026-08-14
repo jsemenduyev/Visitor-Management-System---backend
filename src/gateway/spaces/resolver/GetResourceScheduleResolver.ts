@@ -15,7 +15,7 @@ export default async (args: any, ctx: any) => {
     return [];
   }
 
-  const query: any = { location, createdBy: ctx.user._id };
+  const query: any = { location };
   if (space) query.space = space;
   if (resourceCategory) query.resourceCategory = resourceCategory;
 

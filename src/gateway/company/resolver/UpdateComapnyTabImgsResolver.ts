@@ -1,29 +1,21 @@
+import { CompanyModel } from "../../../../database/models/company";
 import OfficeLocationModel from "../../../../database/models/officelocations";
 import { MutationUpdateCompanyImgsArgs } from "../../../generated/graphql";
 
-export default async (args: MutationUpdateCompanyImgsArgs, ctx: any) => {
+export default async (args: MutationUpdateCompanyImgsArgs) => {
   try {
-    const authUser = ctx?.user;
-    if (!authUser?._id || !authUser?.company) {
-      throw new Error("Access denied");
-    }
-
-    const location = await OfficeLocationModel.findOne({
-      _id: args.locationId,
-      company: authUser.company,
-    }).lean();
-
-    if (!location) {
-      throw new Error("Location not found");
-    }
-
-    await OfficeLocationModel.updateOne({ _id: location._id }, {
-      $set: { [`settingsByAdmin.${String(authUser._id)}.savedImgs`]: args.imgs },
-    });
+    await OfficeLocationModel.findByIdAndUpdate(
+      { _id: args.locationId },
+      {
+        $set: {
+          savedImgs: args.imgs,
+        },
+      },
+      { new: true },
+    );
 
     return "Imgs updated";
   } catch (error) {
     console.log(error);
-    throw error;
   }
 };

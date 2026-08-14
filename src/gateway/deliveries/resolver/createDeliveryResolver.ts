@@ -23,7 +23,6 @@ export default async (args: MutationCreateDeliveryArgs, ctx) => {
     const newInput = {
       ...input,
       company: user.company,
-      createdBy: user._id,
     };
     const delivery = await DeliveryModel.create(newInput);
     const company = await OfficeLocationModel.findOne({ company: user.company }).lean();

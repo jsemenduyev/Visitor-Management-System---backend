@@ -14,7 +14,7 @@ export default async (args: any, ctx: any) => {
     return [];
   }
 
-  const query: any = { location, createdBy: ctx.user._id };
+  const query: any = { location };
   if (resourceCategory) query.resourceCategory = resourceCategory;
 
   const resources = await SpaceResourceModel.find(query)

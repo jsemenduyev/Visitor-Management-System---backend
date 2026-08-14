@@ -11,7 +11,6 @@ export default async function getVisitorCategories(
     const categories = await VisitorCategory.find({
       company: user.company,
       location: args.location,
-      createdBy: user._id,
     })
       .sort({ priority: 1 })
       .lean();

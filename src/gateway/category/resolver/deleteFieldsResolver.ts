@@ -3,7 +3,7 @@ import {
   MutationDeleteFieldArgs,
 } from "../../../generated/graphql";
 
-export default async (_: any, args: MutationDeleteFieldArgs, ctx: any) => {
+export default async (_: any, args: MutationDeleteFieldArgs) => {
   try {
     const { categoryId, fieldId } = args;
 
@@ -11,11 +11,7 @@ export default async (_: any, args: MutationDeleteFieldArgs, ctx: any) => {
       throw new Error("CategoryId and FieldId are required");
     }
 
-    const category = await visitorCategory.findOne({
-      _id: categoryId,
-      company: ctx.user.company,
-      createdBy: ctx.user._id,
-    });
+    const category = await visitorCategory.findById(categoryId);
     if (!category) {
       throw new Error("Category not found");
     }

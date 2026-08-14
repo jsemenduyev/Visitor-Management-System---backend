@@ -3,12 +3,10 @@ import DeliveryModel from "../../../../database/models/deliveries";
 import { MutationUpdateDeliveryArgs } from "../../../generated/graphql";
 import { sendDeliveryEmail } from "../../../../utils/deliveryEmail";
 import { UserModel } from "../../../../database/models/user";
-import { dashboardOwnerFilter } from "../../utils/ownerScope";
 
-export default async (args: MutationUpdateDeliveryArgs, ctx: any) => {
+export default async (_: any, args: MutationUpdateDeliveryArgs) => {
   try {
     const { input } = args;
-    const { user } = ctx;
 
     // 🔥 Validate ID properly
     if (!input._id) {
@@ -23,11 +21,8 @@ export default async (args: MutationUpdateDeliveryArgs, ctx: any) => {
     // Remove _id from update payload
     const { _id, ...updateData } = input;
 
-    const delivery = await DeliveryModel.findOneAndUpdate(
-      {
-        _id,
-        ...dashboardOwnerFilter(user),
-      },
+    const delivery = await DeliveryModel.findByIdAndUpdate(
+      _id,
       { $set: updateData },
       {
         new: true, // return updated doc
@@ -44,11 +39,11 @@ export default async (args: MutationUpdateDeliveryArgs, ctx: any) => {
       };
     }
     if (input.notify) {
-      const recipient = await UserModel.findById({ _id: delivery.reciepient });
+      const user = await UserModel.findById({ _id: delivery.reciepient });
       await sendDeliveryEmail(
         input.signature ? "signature" : "recipient",
         moment(delivery.createdAt).format("MMM D, h:mm a"),
-        recipient.email,
+        user.email,
         input.packages,
       );
     }

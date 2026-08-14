@@ -51,7 +51,6 @@ export default async (args: MutationCreateUserArgs, ctx: any) => {
     const createPayload: Record<string, any> = {
       ...rest,
       company,
-      createdBy: user._id,
     };
 
     if (requiresWebsiteAccess) {
@@ -65,10 +64,6 @@ export default async (args: MutationCreateUserArgs, ctx: any) => {
     }
 
     const createdEmployee = await UserModel.create(createPayload);
-
-    // #region agent log
-    fetch('http://127.0.0.1:7549/ingest/5c6ee3ea-693f-48e7-9dec-c63993115624',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'5f6d2e'},body:JSON.stringify({sessionId:'5f6d2e',runId:'post-fix',location:'createUserResolver.ts:afterCreate',message:'employee created',data:{creatorId:String(user?._id||''),newEmployeeId:String(createdEmployee?._id||''),savedCreatedBy:createdEmployee?.createdBy?String(createdEmployee.createdBy):null},timestamp:Date.now(),hypothesisId:'H2-fix'})}).catch(()=>{});
-    // #endregion
 
     if (requiresWebsiteAccess && tempPassword) {
       try {

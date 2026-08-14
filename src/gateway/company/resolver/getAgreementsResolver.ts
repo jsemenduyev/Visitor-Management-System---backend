@@ -18,7 +18,6 @@ export default async (args: any, ctx: any) => {
     // Base query
     const query: any = {
       company: companyId,
-      createdBy: ctx.user._id,
     };
 
     // Add search filter if provided

@@ -1,5 +1,4 @@
 import PreRegisterVisitorModel from "../../../../database/models/preRegisterVisitor";
-import { dashboardOwnerFilter } from "../../utils/ownerScope";
 
 export default async (args: { id: string }, ctx) => {
   try {
@@ -7,7 +6,7 @@ export default async (args: { id: string }, ctx) => {
 
     const visitor = await PreRegisterVisitorModel.findOneAndDelete({
       _id: args.id,
-      ...dashboardOwnerFilter(user),
+      company: user.company,
     });
 
     if (!visitor) {

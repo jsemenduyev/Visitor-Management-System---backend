@@ -17,7 +17,6 @@ interface IVisitorCategory extends Document {
   host: boolean;
   company: any;
   location: any;
-  createdBy: any;
   fields: Types.DocumentArray<IField & Document>;
   priority: number;
 }
@@ -60,12 +59,6 @@ const VisitorCategorySchema = new mongoose.Schema<IVisitorCategory>(
       type: Schema.Types.ObjectId,
       ref: "officelocations",
       required: true,
-    },
-    createdBy: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-      index: true,
     },
     fields: {
       type: [FieldSchema],

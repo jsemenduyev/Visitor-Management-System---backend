@@ -1,16 +1,11 @@
 import DeliveryModel from "../../../../database/models/deliveries";
 import { MutationDeleteDeliveryArgs } from "../../../generated/graphql";
-import { dashboardOwnerFilter } from "../../utils/ownerScope";
 
-export default async (args: MutationDeleteDeliveryArgs, ctx: any) => {
+export default async (args: MutationDeleteDeliveryArgs) => {
   try {
     const { _id } = args;
-    const { user } = ctx;
 
-    const delivery = await DeliveryModel.findOneAndDelete({
-      _id,
-      ...dashboardOwnerFilter(user),
-    });
+    const delivery = await DeliveryModel.findByIdAndDelete(_id);
 
     if (!delivery) {
       return {

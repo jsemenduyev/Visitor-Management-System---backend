@@ -2,16 +2,12 @@ import visitorCategory from "../../../../database/models/visitorCategory";
 import { toCamelCase } from "../../../../utils/toCamelCase";
 import { MutationUpdateCategoryArgs } from "../../../generated/graphql";
 
-export default async (_: any, args: MutationUpdateCategoryArgs, ctx: any) => {
+export default async (_: any, args: MutationUpdateCategoryArgs) => {
   try {
     const { input } = args;
 
     // Check if category exists
-    const category = await visitorCategory.findOne({
-      _id: input._id,
-      company: ctx.user.company,
-      createdBy: ctx.user._id,
-    }).lean();
+    const category = await visitorCategory.findById(input._id).lean();
     if (!category) {
       return {
         error: {
@@ -30,8 +26,8 @@ export default async (_: any, args: MutationUpdateCategoryArgs, ctx: any) => {
     }
 
     // Update category
-    const updatedCategory = await visitorCategory.findOneAndUpdate(
-      { _id: input._id, company: ctx.user.company, createdBy: ctx.user._id },
+    const updatedCategory = await visitorCategory.findByIdAndUpdate(
+      input._id,
       input,
       { new: true }
     );

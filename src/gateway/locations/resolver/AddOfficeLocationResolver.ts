@@ -13,7 +13,6 @@ const LOCATION_IDENTITY_FIELDS = new Set([
     "createdAt",
     "updatedAt",
     "__v",
-    "settingsByAdmin",
 ]);
 
 const BADGE_TYPES = new Set(["standard", "photo", "simple"]);
@@ -60,12 +59,10 @@ const cloneVisitorCategories = async (
     sourceLocationId: string,
     newLocationId: unknown,
     company: unknown,
-    createdBy: unknown,
 ) => {
     const categories = await VisitorCategoryModel.find({
         location: sourceLocationId,
         company,
-        createdBy,
     }).lean();
 
     if (categories.length === 0) {
@@ -81,7 +78,6 @@ const cloneVisitorCategories = async (
             priority: category.priority,
             company,
             location: newLocationId,
-            createdBy,
             fields: (category.fields ?? []).map((field) => ({
                 name: field.name,
                 label: field.label,
@@ -148,7 +144,6 @@ export default async (args: MutationAddLocationArgs, ctx: any) => {
                     copyFromLocationId,
                     location._id,
                     company,
-                    user._id,
                 );
             }
 

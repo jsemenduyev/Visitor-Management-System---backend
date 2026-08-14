@@ -93,7 +93,7 @@ const parseSignedInDate = (value?: string | null) => {
   return Number.isNaN(date.getTime()) ? null : date;
 };
 
-export default async (args, ctx) => {
+export default async (_, args, ctx) => {
   try {
     const { location, search, signedType, limit = 1000, offset = 0 } = args;
     const { user } = ctx;

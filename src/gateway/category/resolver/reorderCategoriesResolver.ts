@@ -4,7 +4,7 @@ export default async (_: unknown, args: { items: { id: string; priority: number 
   try {
     await Promise.all(
       args.items.map(({ id, priority }) =>
-        VisitorCategory.updateOne({ _id: id, company: ctx.user.company, createdBy: ctx.user._id }, { $set: { priority } }),
+        VisitorCategory.updateOne({ _id: id, company: ctx.user.company }, { $set: { priority } }),
       ),
     );
     return "Categories reordered successfully";

@@ -1,14 +1,13 @@
 import DeviceModel from "../../../../database/models/devices";
 import { MutationUpdateDeviceArgs } from "../../../generated/graphql";
 
-export default async (args: MutationUpdateDeviceArgs, ctx: any) => {
+export default async (args: MutationUpdateDeviceArgs) => {
   try {
     const { input } = args;
 
-    const { _id, company: _ignoredCompany, createdBy: _ignoredCreatedBy, ...updates } = input as any;
-    const updatedDevice = await DeviceModel.findOneAndUpdate(
-      { _id, company: ctx.user.company, createdBy: ctx.user._id },
-      { $set: updates },
+    const updatedDevice = await DeviceModel.findByIdAndUpdate(
+      { _id: input._id },
+      { $set: input },
       { new: true } // return updated doc
     );
 

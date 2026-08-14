@@ -8,7 +8,6 @@ export default async (args: QueryGetDevicesArgs, ctx) => {
     const devices = await DeviceModel.find({
       company: user.company,
       location: args.location,
-      createdBy: user._id,
     })
       .populate("department")
       .populate("categoryType")

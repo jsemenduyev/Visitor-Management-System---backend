@@ -14,12 +14,6 @@ const DeviceSchema = new Schema({
     ref: "company",
     required: true,
   },
-  createdBy: {
-    type: Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
-    index: true,
-  },
   department: [
     {
       type: Schema.Types.ObjectId,

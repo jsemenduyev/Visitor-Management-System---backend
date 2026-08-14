@@ -11,7 +11,7 @@ export default async (args: QueryGetSpacesArgs, ctx) => {
     return [];
   }
 
-  const query: any = { location, createdBy: ctx.user._id };
+  const query: any = { location };
   if (space) query._id = space;
   if (resourceCategory) query.resourceCategory = resourceCategory;
   const getSpaces = await SpaceModel.find(query).lean();

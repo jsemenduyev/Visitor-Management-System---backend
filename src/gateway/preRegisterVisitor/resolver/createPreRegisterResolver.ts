@@ -59,7 +59,6 @@ export default async (args: MutationCreatePreRegisterArgs, ctx) => {
       ...input,
       employees,
       company: user.company,
-      createdBy: user._id,
     };
 
     const visitor = await PreRegisterVisitorModel.create(newInput);

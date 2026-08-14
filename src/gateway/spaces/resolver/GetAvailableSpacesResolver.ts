@@ -20,7 +20,6 @@ export default async (args: any, ctx: any) => {
     const resDoc = await SpaceResourceModel.findOne({
       _id: resource,
       location,
-      createdBy: ctx.user._id,
     })
       .select("space")
       .lean();
@@ -30,7 +29,7 @@ export default async (args: any, ctx: any) => {
     spaceIds = [resDoc.space.toString()];
   }
 
-  const spaceQuery: any = { location, createdBy: ctx.user._id };
+  const spaceQuery: any = { location };
   if (spaceIds) {
     spaceQuery._id = { $in: spaceIds };
   }

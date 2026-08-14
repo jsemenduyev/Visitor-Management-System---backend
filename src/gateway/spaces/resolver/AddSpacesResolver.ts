@@ -36,7 +36,6 @@ export default async (args: any, ctx: any) => {
   const findSpace = await SpaceModel.findOne({
     location: input?.location,
     name: input?.name,
-    createdBy: ctx.user._id,
   });
   if (findSpace) {
     return {
@@ -48,7 +47,7 @@ export default async (args: any, ctx: any) => {
     };
   }
 
-  const space = await SpaceModel.create({ ...input, createdBy: ctx.user._id });
+  const space = await SpaceModel.create(input);
   return {
     spaces: space,
     error: null,

@@ -1,5 +1,4 @@
 import { UserModel } from "../../../../database/models/user";
-import { dashboardEmployeeFilter } from "../../utils/ownerScope";
 
 export default async (args: { search?: string; limit?: number; offset?: number }, ctx) => {
   try {
@@ -12,21 +11,16 @@ export default async (args: { search?: string; limit?: number; offset?: number }
       companyId = dbUser?.company;
     }
 
-    const employeeScope = dashboardEmployeeFilter(user);
-
     const query: any = {
-      company: employeeScope.company,
+      company: companyId,
       isArchived: true,
-      $and: [{ $or: employeeScope.$or }],
     };
 
     if (search && search.trim() !== "") {
-      query.$and.push({
-        $or: [
-          { firstName: { $regex: search, $options: "i" } },
-          { email: { $regex: search, $options: "i" } },
-        ],
-      });
+      query.$or = [
+        { firstName: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+      ];
     }
 
     const users = await UserModel.find(query)

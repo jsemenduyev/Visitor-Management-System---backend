@@ -19,10 +19,9 @@ const hostLabelForUser = (user: any, departmentName?: string) =>
   user?.name ||
   "N/A";
 
-export default async (_: any, args: MutationUpdateVisitorArgs, ctx?: any) => {
+export default async (_: any, args: MutationUpdateVisitorArgs) => {
   try {
     const { input } = args;
-    const authUser = ctx?.user;
 
     if (!input?._id) {
       return {
@@ -33,13 +32,7 @@ export default async (_: any, args: MutationUpdateVisitorArgs, ctx?: any) => {
       };
     }
 
-    const ownerQuery: Record<string, any> = { _id: input._id };
-    if (authUser) {
-      ownerQuery.company = authUser.company;
-      ownerQuery.createdBy = authUser._id;
-    }
-
-    const visitor = await VisitorModel.findOne(ownerQuery);
+    const visitor = await VisitorModel.findById(input._id);
 
     if (!visitor) {
       return {

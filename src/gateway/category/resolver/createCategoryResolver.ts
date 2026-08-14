@@ -1,16 +1,15 @@
 import visitorCategory from "../../../../database/models/visitorCategory";
 import { MutationCreateCategoryArgs } from "../../../generated/graphql";
 
-export default async (_: any, args: MutationCreateCategoryArgs, ctx: any) => {
+export default async (_: any, args: MutationCreateCategoryArgs) => {
   try {
     const { input } = args;
     // Check if category already exists
     const existing = await visitorCategory
       .findOne({
         name: input.name,
-        company: ctx.user.company,
+        company: input.company,
         location: input?.location,
-        createdBy: ctx.user._id,
       })
       .lean();
 
@@ -24,11 +23,7 @@ export default async (_: any, args: MutationCreateCategoryArgs, ctx: any) => {
     }
 
     // Create new category (with just name for now)
-    const savedCategory = await visitorCategory.create({
-      ...input,
-      company: ctx.user.company,
-      createdBy: ctx.user._id,
-    });
+    const savedCategory = await visitorCategory.create(input);
 
     return {
       category: savedCategory,

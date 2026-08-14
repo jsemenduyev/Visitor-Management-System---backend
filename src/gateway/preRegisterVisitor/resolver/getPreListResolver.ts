@@ -1,11 +1,9 @@
 import moment from "moment-timezone";
 import PreRegisterVisitorModel from "../../../../database/models/preRegisterVisitor";
 import { QueryGetPreVisitorsArgs } from "../../../generated/graphql";
-import { dashboardOwnerFilter } from "../../utils/ownerScope";
-
 const US_TIMEZONE = "America/New_York"; // change if needed
 
-export default async (args: QueryGetPreVisitorsArgs, ctx) => {
+export default async (_, args: QueryGetPreVisitorsArgs) => {
   try {
     const {
       startDate,
@@ -14,15 +12,13 @@ export default async (args: QueryGetPreVisitorsArgs, ctx) => {
       category,
       limit = 10,
       offset = 0,
+      company,
       sorted,
       location,
     } = args;
 
-    const { user } = ctx;
-
-    const filter: any = {
-      ...dashboardOwnerFilter(user),
-    };
+    const filter: any = { company };
+    // "All locations" sends null, so leave location out of the query.
     if (location) {
       filter.location = location;
     }
@@ -63,11 +59,9 @@ export default async (args: QueryGetPreVisitorsArgs, ctx) => {
       .populate("employees")
       .populate("department")
       .sort(sorted?.columnId ? sort : { createdAt: -1 })
-      .skip(offset)
-      .limit(limit)
       .lean();
 
-    const count = await PreRegisterVisitorModel.countDocuments(filter);
+    const count = await PreRegisterVisitorModel.countDocuments();
     return { visitors, count };
   } catch (error) {
     console.error("Error fetching pre visitors:", error);

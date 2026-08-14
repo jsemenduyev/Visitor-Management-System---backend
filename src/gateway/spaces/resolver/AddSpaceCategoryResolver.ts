@@ -22,7 +22,6 @@ export default async (args: any, ctx: any) => {
   const category = await SpaceCategoryModel.findOne({
     location: input?.location,
     name: input?.name,
-    createdBy: ctx.user._id,
   });
 
   if (category) {
@@ -35,7 +34,7 @@ export default async (args: any, ctx: any) => {
     };
   }
 
-  const createCategory = await SpaceCategoryModel.create({ ...input, createdBy: ctx.user._id });
+  const createCategory = await SpaceCategoryModel.create(input);
   return {
     category: createCategory,
     error: null,

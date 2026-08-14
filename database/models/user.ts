@@ -84,28 +84,6 @@ const UserSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    createdBy: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      default: null,
-      index: true,
-    },
-    welcomeSettings: {
-      savedImgs: {
-        type: [
-          {
-            url: { type: String, required: true },
-            enabled: { type: Boolean, default: true },
-          },
-        ],
-        default: undefined,
-      },
-      visitorButton: {
-        buttonRadius: { type: String },
-        buttonColor: { type: String },
-        buttonBg: { type: String },
-      },
-    },
   },
   { timestamps: true }
 );

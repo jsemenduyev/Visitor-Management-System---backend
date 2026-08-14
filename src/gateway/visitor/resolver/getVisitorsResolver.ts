@@ -1,11 +1,8 @@
 import moment from "moment-timezone";
 import VisitorModel from "../../../../database/models/visitor";
 import { QueryGetVistorsArgs } from "../../../generated/graphql";
-import { dashboardOwnerFilter } from "../../utils/ownerScope";
-
 const US_TIMEZONE = "America/New_York"; // change if needed
-
-export default async (args: QueryGetVistorsArgs, ctx) => {
+export default async (_, args: QueryGetVistorsArgs, ctx) => {
   try {
     const {
       startDate,
@@ -17,13 +14,13 @@ export default async (args: QueryGetVistorsArgs, ctx) => {
       limit = 10,
       offset = 0,
       sorted,
-      location,
+      location
     } = args;
 
     const { user } = ctx;
 
     const filter: any = {
-      ...dashboardOwnerFilter(user),
+      company: user.company,
     };
     if (location) {
       filter.location = location;
@@ -31,11 +28,7 @@ export default async (args: QueryGetVistorsArgs, ctx) => {
     let sort = {};
     // Date filter
     if (startDate && endDate) {
-      const start = moment
-        .tz(startDate, US_TIMEZONE)
-        .startOf("day")
-        .utc()
-        .toDate();
+      const start = moment.tz(startDate, US_TIMEZONE).startOf("day").utc().toDate();
       const end = moment.tz(endDate, US_TIMEZONE).endOf("day").utc().toDate();
 
       filter.createdAt = {
@@ -44,6 +37,7 @@ export default async (args: QueryGetVistorsArgs, ctx) => {
       };
     }
 
+    
     // Category filter
     if (category) {
       filter.category = category;

@@ -7,11 +7,10 @@ import visitorCategory from "../../../../database/models/visitorCategory";
 import { normalizeVisitorData } from "../../../../utils/visitorData";
 import { MutationCreateVisitorArgs } from "../../../generated/graphql";
 
-export default async (_: any, args: MutationCreateVisitorArgs, ctx?: any) => {
+export default async (_: any, args: MutationCreateVisitorArgs) => {
   try {
     const { input } = args;
     const normalizedData = normalizeVisitorData(input.data);
-    const authUser = ctx?.user;
 
     // Validate the category before checking duplicates so the duplicate check
     // can be limited to the kiosk's location. A visitor signed in elsewhere
@@ -30,7 +29,6 @@ export default async (_: any, args: MutationCreateVisitorArgs, ctx?: any) => {
     if (normalizedData?.fullName) {
       await PreRegisterVisitorModel.findOneAndDelete({
         "data.fullName": normalizedData.fullName,
-        ...(authUser?.company ? { company: authUser.company } : {}),
       });
     }
 
@@ -52,7 +50,6 @@ export default async (_: any, args: MutationCreateVisitorArgs, ctx?: any) => {
         $or: duplicateConditions,
         signedType: "In",
         location: category.location,
-        ...(authUser?.company ? { company: authUser.company } : {}),
       });
 
       if (existingVisitor) {
@@ -60,29 +57,6 @@ export default async (_: any, args: MutationCreateVisitorArgs, ctx?: any) => {
           error: { message: "Visitor already exists", code: "ALREADY_EXISTS" },
         };
       }
-    }
-
-    // ✅ Category
-    const category = await visitorCategory.findById(input.category).lean();
-    if (!category) {
-      return {
-        error: {
-          message: "Invalid visitor category",
-          code: "INVALID_CATEGORY",
-        },
-      };
-    }
-
-    if (
-      authUser?.company &&
-      category.company?.toString() !== authUser.company.toString()
-    ) {
-      return {
-        error: {
-          message: "Invalid visitor category",
-          code: "INVALID_CATEGORY",
-        },
-      };
     }
 
     let employees: Types.ObjectId[] = [];
@@ -131,19 +105,17 @@ export default async (_: any, args: MutationCreateVisitorArgs, ctx?: any) => {
      * -----------------------------------
      * Create visitor payload
      * Notifications are sent from updateVisitor (after photo is attached).
-     * Dashboard JWT stamps createdBy; device/QR leave null.
      * -----------------------------------
      */
-    const newInput: Record<string, any> = {
+    const newInput = {
       ...input,
       data: normalizedData,
-      company: authUser?.company || category.company,
+      company: category.company,
       employees,
       signedType: category.approval ? "Pending" : "In",
       // Client-provided ISO datetime (online: now; offline sync: original local time)
       signedIn: input.signedIn,
       notificationSent: false,
-      createdBy: authUser?._id || null,
     };
 
     const visitor = await VisitorModel.create(newInput);

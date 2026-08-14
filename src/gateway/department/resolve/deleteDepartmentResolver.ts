@@ -30,7 +30,6 @@ export default async (
     const department = await DepartmentModel.findOne({
       _id: departmentId,
       company,
-      createdBy: ctx.user._id,
     }).session(session);
 
     if (!department) {
@@ -39,7 +38,7 @@ export default async (
 
     /** 2️⃣ REMOVE DEPARTMENT FROM DEVICES */
     await DeviceModel.updateMany(
-      { company: department.company, createdBy: ctx.user._id },
+      { company: department.company },
       { $pull: { department: departmentId } },
       { session }
     );
@@ -49,7 +48,6 @@ export default async (
       {
         company: department.company,
         department: departmentId,
-        createdBy: ctx.user._id,
       },
       { session }
     );
@@ -58,21 +56,20 @@ export default async (
       {
         company: department.company,
         department: departmentId,
-        createdBy: ctx.user._id,
       },
       { session }
     );
 
     /** 4️⃣ UNSET DEPARTMENT FROM USERS (scoped by company) */
     await UserModel.updateMany(
-      { department: departmentId, company: department.company, createdBy: ctx.user._id },
+      { department: departmentId, company: department.company },
       { $set: { department: null } },
       { session }
     );
 
     /** 5️⃣ DELETE DEPARTMENT */
     await DepartmentModel.findOneAndDelete(
-      { _id: departmentId, company, createdBy: ctx.user._id },
+      { _id: departmentId, company },
       { session }
     );
 

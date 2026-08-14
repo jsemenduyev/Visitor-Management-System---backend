@@ -87,12 +87,6 @@ const VisitorSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    createdBy: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      default: null,
-      index: true,
-    },
   },
   { timestamps: true },
 );

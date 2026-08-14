@@ -17,14 +17,13 @@ export default async (args: MutationCreateDepartmentArgs, ctx) => {
 
     // Never trust client-provided company — always use caller's company
     const { company: _ignoredCompany, ...restInput } = input as any;
-    const scopedInput = { ...restInput, company, createdBy: ctx.user._id };
+    const scopedInput = { ...restInput, company };
 
     // Duplicate check only for CREATE
     if (!input._id) {
       const existingDepartment = await DepartmentModel.findOne({
         name: input.name,
         company,
-        createdBy: ctx.user._id,
       });
 
       if (existingDepartment) {
@@ -40,7 +39,7 @@ export default async (args: MutationCreateDepartmentArgs, ctx) => {
     // Update existing department (scoped to caller's company)
     if (input._id) {
       const updatedDepartment = await DepartmentModel.findOneAndUpdate(
-        { _id: input._id, company, createdBy: ctx.user._id },
+        { _id: input._id, company },
         scopedInput,
         { new: true }
       );

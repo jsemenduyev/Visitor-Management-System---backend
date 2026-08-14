@@ -9,7 +9,6 @@ export default async (
     const category = await VisitorCategory.findOne({
       _id: args.categoryId,
       company: ctx.user.company,
-      createdBy: ctx.user._id,
     });
 
     if (!category) throw new Error("Category not found");

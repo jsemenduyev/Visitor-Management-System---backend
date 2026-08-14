@@ -43,8 +43,7 @@ export const PreRegisterQuery = {
         type: SortedInput,
       },
     },
-    resolve: (_, args, ctx) =>
-      isAUthenticated(args, ctx, getPreListResolver),
+    resolve: getPreListResolver,
   },
 };
 export const PreRegisterMutation = {

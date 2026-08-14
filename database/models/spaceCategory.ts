@@ -13,7 +13,6 @@ export const SpaceCategorySchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: "officelocations",
   },
-  createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
 });
 
 const SpaceCategoryModel = model("spacecategory", SpaceCategorySchema);
