@@ -21,6 +21,7 @@ export default async (args: { locationId: string }, ctx: any) => {
     const location = await OfficeLocationModel.findOneAndDelete({
       _id: args.locationId,
       company,
+      createdBy: user._id,
     });
 
     if (!location) {

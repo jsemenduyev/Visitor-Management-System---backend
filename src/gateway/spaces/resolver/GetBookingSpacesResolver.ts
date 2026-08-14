@@ -10,17 +10,19 @@ export default async (args: any, ctx: any) => {
     return [];
   }
 
-  const query: any = {};
+  const query: any = { createdBy: ctx.user._id };
 
   if (location) {
-    const ownedLocation = await assertLocationBelongsToCompany(location, company);
+    const ownedLocation = await assertLocationBelongsToCompany(location, company, ctx.user._id);
     if (!ownedLocation) {
       return [];
     }
     query.location = location;
   } else {
-    // Constrain to company-owned locations when location is omitted
-    const companyLocations = await OfficeLocationModel.find({ company })
+    const companyLocations = await OfficeLocationModel.find({
+      company,
+      createdBy: ctx.user._id,
+    })
       .select("_id")
       .lean();
     const locationIds = companyLocations.map((l: any) => l._id);

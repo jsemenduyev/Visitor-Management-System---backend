@@ -2,6 +2,7 @@ import { CompanyModel } from "../../../../database/models/company";
 import OfficeLocationModel from "../../../../database/models/officelocations";
 import VisitorCategoryModel from "../../../../database/models/visitorCategory";
 import { MutationAddLocationArgs } from "../../../generated/graphql";
+import { dashboardLocationFilter } from "../../utils/locationOwnerScope";
 
 const LOCATION_IDENTITY_FIELDS = new Set([
     "_id",
@@ -10,6 +11,7 @@ const LOCATION_IDENTITY_FIELDS = new Set([
     "lat",
     "lng",
     "company",
+    "createdBy",
     "createdAt",
     "updatedAt",
     "__v",
@@ -101,6 +103,7 @@ export default async (args: MutationAddLocationArgs, ctx: any) => {
         const updateData: any = {
             name: args.name,
             company,
+            createdBy: user._id,
             address: args.address,
             customHeading: args.customHeading,
         };
@@ -111,7 +114,12 @@ export default async (args: MutationAddLocationArgs, ctx: any) => {
         if (argsWithCoords.lng) updateData.lng = parseFloat(argsWithCoords.lng);
         
         if (args._id) {
-            const location = await OfficeLocationModel.findByIdAndUpdate(args._id, updateData, { new: true })
+            const { createdBy: _ignoredCreatedBy, ...ownedUpdate } = updateData;
+            const location = await OfficeLocationModel.findOneAndUpdate(
+                { _id: args._id, ...dashboardLocationFilter(user) },
+                ownedUpdate,
+                { new: true },
+            )
 
             if (!location) {
                 return {
@@ -128,7 +136,7 @@ export default async (args: MutationAddLocationArgs, ctx: any) => {
             if (copyFromLocationId) {
                 const sourceLocation = await OfficeLocationModel.findOne({
                     _id: copyFromLocationId,
-                    company,
+                    ...dashboardLocationFilter(user),
                 }).lean();
 
                 if (sourceLocation) {

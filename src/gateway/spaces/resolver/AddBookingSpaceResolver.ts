@@ -15,7 +15,8 @@ export default async (args: any, ctx: any) => {
 
   const ownedLocation = await assertLocationBelongsToCompany(
     input?.location,
-    company
+    company,
+    ctx.user._id
   );
   if (!ownedLocation) {
     return {
@@ -78,6 +79,7 @@ export default async (args: any, ctx: any) => {
     resource = await SpaceResourceModel.findOne({
       _id: input.resource,
       location: input.location,
+      createdBy: ctx.user._id,
     }).lean();
     if (!resource) {
       return {
@@ -95,6 +97,7 @@ export default async (args: any, ctx: any) => {
     space = await SpaceModel.findOne({
       _id: input.space,
       location: input.location,
+      createdBy: ctx.user._id,
     }).lean();
     if (!space) {
       return {
@@ -126,6 +129,7 @@ export default async (args: any, ctx: any) => {
     location: input.location,
     start: input.start,
     end: input.end,
+    createdBy: ctx.user._id,
   });
 
   if (resource) {
@@ -174,6 +178,7 @@ export default async (args: any, ctx: any) => {
     people: people >= 1 ? people : 1,
     resource: hasResource ? input.resource : undefined,
     space: hasSpace ? input.space : undefined,
+    createdBy: ctx.user._id,
   });
   return {
     booking,

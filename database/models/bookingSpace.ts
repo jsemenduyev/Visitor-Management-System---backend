@@ -39,6 +39,12 @@ const BookingSpaceSchema = new Schema(
       default: 1,
       min: 1,
     },
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+      index: true,
+    },
   },
   { timestamps: true }
 );

@@ -9,7 +9,7 @@ export default async (args: any, ctx: any) => {
     return [];
   }
 
-  const ownedLocation = await assertLocationBelongsToCompany(location, company);
+  const ownedLocation = await assertLocationBelongsToCompany(location, company, ctx.user._id);
   if (!ownedLocation) {
     return [];
   }

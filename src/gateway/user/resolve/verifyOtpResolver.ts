@@ -1,11 +1,13 @@
 import { UserModel } from "../../../../database/models/user";
 
+const normalizeEmail = (email?: string | null) =>
+  String(email || "").trim().toLowerCase();
+
 export default async (_, args) => {
   try {
     const { otp, email } = args;
 
-    // 1. Find user by email + otp
-    const user = await UserModel.findOne({ email, otp: otp });
+    const user = await UserModel.findOne({ email: normalizeEmail(email), otp });
     if (!user) {
       return {
         error: {
@@ -15,7 +17,6 @@ export default async (_, args) => {
       };
     }
 
-    // 2. Check expiry
     if (user.otpExpiry < Date.now()) {
       return {
         error: {
@@ -24,10 +25,6 @@ export default async (_, args) => {
         },
       };
     }
-
-    // 3. If valid, clear OTP (optional, for one-time use)
-    user.otp = undefined;
-    await user.save();
 
     return { user };
   } catch (error) {

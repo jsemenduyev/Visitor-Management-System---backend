@@ -17,7 +17,6 @@ const UserSchema = new Schema(
     email: {
       type: String,
       required: true,
-      unique: true,
       lowercase: true,
       trim: true,
       match: [/\S+@\S+\.\S+/, "Invalid email format"],
@@ -87,5 +86,7 @@ const UserSchema = new Schema(
   },
   { timestamps: true }
 );
+
+UserSchema.index({ createdBy: 1, email: 1 }, { unique: true, name: "createdBy_1_email_1" });
 
 export const UserModel = mongoose.model("User", UserSchema);

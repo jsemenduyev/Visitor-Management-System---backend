@@ -1,4 +1,9 @@
 import OfficeLocationModel from "../../../../database/models/officelocations";
+import { locationForAdmin } from "../../utils/adminLocationSettings";
+import {
+  dashboardLocationFilter,
+  ensureLegacyLocationOwners,
+} from "../../utils/locationOwnerScope";
 
 export default async (args, ctx) => {
   try {
@@ -14,9 +19,15 @@ export default async (args, ctx) => {
       };
     }
 
-    const locations = await OfficeLocationModel.find({ company }).lean();
+    await ensureLegacyLocationOwners(company);
 
-    return locations;
+    const locations = await OfficeLocationModel.find(dashboardLocationFilter(user))
+      .select("+settingsByAdmin")
+      .lean();
+
+    return locations.map((location) =>
+      locationForAdmin(location as any, user._id),
+    );
   } catch (error: any) {
     console.error("Error fetching office locations:", error);
 

@@ -1,5 +1,6 @@
 import { UserModel } from "../../../../database/models/user";
 import { QueryGetUsersArgs } from "../../../generated/graphql";
+import { dashboardEmployeeFilter } from "../../utils/ownerScope";
 
 export default async (args: QueryGetUsersArgs, ctx) => {
   try {
@@ -12,20 +13,28 @@ export default async (args: QueryGetUsersArgs, ctx) => {
       companyId = dbUser?.company;
     }
 
-    // Build search query
+    const employeeScope = dashboardEmployeeFilter(user);
+
+    // Build search query — keep ownership $or separate from search $or via $and
     const query: any = {
-      company: companyId,
+      company: employeeScope.company,
       isArchived: { $ne: true },
+      $and: [{ $or: employeeScope.$or }],
     };
+
     let sort = {};
     if (search && search.trim() !== "") {
-      query.$or = [
-        { firstName: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
-      ];
+      query.$and.push({
+        $or: [
+          { firstName: { $regex: search, $options: "i" } },
+          { email: { $regex: search, $options: "i" } },
+        ],
+      });
     }
     if (location) {
-      query.location = location;
+      query.$and.push({
+        $or: [{ location }, { _id: user._id }],
+      });
     }
 
     if (role) {

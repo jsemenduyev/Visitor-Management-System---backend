@@ -17,6 +17,7 @@ export async function findOverlappingBookings(filter: {
   location?: string;
   resource?: string;
   space?: string;
+  createdBy?: string;
   start: Date | string;
   end: Date | string;
 }) {
@@ -26,6 +27,7 @@ export async function findOverlappingBookings(filter: {
   if (filter.location) query.location = filter.location;
   if (filter.resource) query.resource = filter.resource;
   if (filter.space) query.space = filter.space;
+  if (filter.createdBy) query.createdBy = filter.createdBy;
 
   return BookingSpaceModel.find(query)
     .select("resource space start end people")

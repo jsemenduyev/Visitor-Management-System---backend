@@ -1,14 +1,16 @@
 import nodemailer from "nodemailer";
 import { UserModel } from "../../../../database/models/user";
 
+const normalizeEmail = (email?: string | null) =>
+  String(email || "").trim().toLowerCase();
 
 export default async (_, args) => {
   try {
     const { email } = args;
+    const normalizedEmail = normalizeEmail(email);
 
-    // 1. Verify user exists
-    const user = await UserModel.findOne({ email });
-    if (!user) {
+    const users = await UserModel.find({ email: normalizedEmail });
+    if (!users.length) {
       return {
         error: {
           message: "User not found with this email.",
@@ -17,15 +19,14 @@ export default async (_, args) => {
       };
     }
 
-    // 2. Generate 4-digit OTP
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
+    const otpExpiry = Date.now() + 10 * 60 * 1000;
 
-    // 3. Save OTP & expiry in DB (valid for 10 mins)
-    user.otp = otp;
-    user.otpExpiry = Date.now() + 10 * 60 * 1000;
-    await user.save();
+    await UserModel.updateMany(
+      { _id: { $in: users.map((user) => user._id) } },
+      { $set: { otp, otpExpiry } },
+    );
 
-    // 4. Nodemailer transporter
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
       port: 465,
@@ -36,15 +37,14 @@ export default async (_, args) => {
       },
     });
 
-    // 5. Mail template
     const mailOptions = {
       from: `"Support" <${process.env.EMAIL_USER}>`,
-      to: email,
+      to: normalizedEmail,
       subject: "Password Reset OTP",
       html: `
         <div style="font-family:Arial, sans-serif; line-height:1.5;">
           <h2>Password Reset Request</h2>
-          <p>Hello ${user.firstName || ""},</p>
+          <p>Hello ${users[0].firstName || ""},</p>
           <p>We received a request to reset your password. Use the OTP below to continue:</p>
           <h1 style="color:#2b6cb0;">${otp}</h1>
           <p>This OTP will expire in <b>10 minutes</b>.</p>
@@ -53,10 +53,9 @@ export default async (_, args) => {
       `,
     };
 
-    // 6. Send mail
     await transporter.sendMail(mailOptions);
 
-    return { user };
+    return { user: users[0] };
   } catch (error) {
     console.error("Error sending reset OTP:", error);
     return { success: false, message: error.message };

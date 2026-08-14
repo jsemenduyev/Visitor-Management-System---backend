@@ -42,6 +42,20 @@ const OfficeLocationSchema = new Schema(
       ref: "company",
       default: null,
     },
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+      index: true,
+    },
+    // Per-admin configuration. The top-level location fields are retained as
+    // defaults for existing locations and unauthenticated device flows.
+    settingsByAdmin: {
+      type: Map,
+      of: Schema.Types.Mixed,
+      default: {},
+      select: false,
+    },
     selectedAgreement: {
       agreement: {
         type: Schema.Types.ObjectId,

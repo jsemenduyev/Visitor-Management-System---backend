@@ -18,7 +18,8 @@ export default async (args: any, ctx: any) => {
 
   const ownedCurrent = await assertLocationBelongsToCompany(
     existing.location?.toString?.() ?? existing.location,
-    company
+    company,
+    ctx.user._id
   );
   if (!ownedCurrent) {
     return {
@@ -34,7 +35,8 @@ export default async (args: any, ctx: any) => {
   if (input?.location) {
     const ownedNew = await assertLocationBelongsToCompany(
       input.location,
-      company
+      company,
+      ctx.user._id
     );
     if (!ownedNew) {
       return {

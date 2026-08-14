@@ -32,6 +32,35 @@ const createTransporter = () => {
     auth: { user, pass },
   });
 };
+export const sendEmployeeWelcomeOnlyEmail = async (
+  name: string,
+  email: string,
+) => {
+  const { user: fromEmail } = getMailConfig();
+  const transporter = createTransporter();
+
+  await transporter.sendMail({
+    from: `"Maximal Security " <${fromEmail}>`,
+    to: email,
+    subject: "Welcome to Maximal Security",
+    html: `
+      <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; background-color: #f8f9fa;">
+        <h2 style="color: #004175;">Hello ${name || "there"},</h2>
+
+        <p>Welcome to <strong>Maximal Security Visitor Management App</strong>. An employee profile has been created for you.</p>
+
+        <p>You can use the workplace app with this email. No password setup is required for an employee account.</p>
+
+        <p style="margin-top: 30px; font-size: 12px; color: #888;">
+          If you did not expect this email, please disregard this message.
+        </p>
+
+        <p style="font-size: 13px; margin-top: 20px;">— Maximal Security Team</p>
+      </div>
+    `,
+  });
+};
+
 export const sendEmployeeWelcomeEmail = async (
   userId: string,
   name: string,

@@ -1,21 +1,17 @@
 import { UserModel } from "../../../../database/models/user";
 import { signToken } from "../../../services/authJwt";
 
+const normalizeEmail = (email?: string | null) =>
+  String(email || "").trim().toLowerCase();
+
 export default async (_, args) => {
   try {
     const { email, otp } = args;
-    console.log(email, "EMIII", otp);
 
-    const user = await UserModel.findOne({ email });
+    const user = await UserModel.findOne({ email: normalizeEmail(email), otp });
     if (!user) {
       return {
         error: { message: "Employee Not Found", code: "NOT_FOUND" },
-      };
-    }
-
-    if (user.otp !== otp) {
-      return {
-        error: { message: "Invalid OTP", code: "INVALID_OTP" },
       };
     }
 
@@ -25,12 +21,11 @@ export default async (_, args) => {
       };
     }
 
-    // OTP Success → clear OTP
-    user.otp = null;
-    user.otpExpiry = null;
-    await user.save();
+    await UserModel.updateMany(
+      { email: normalizeEmail(email), otp },
+      { $unset: { otp: 1, otpExpiry: 1 } },
+    );
 
-    // 3. Create JWT token
     const token = signToken({
       _id: user._id.toString(),
       name: user.firstName,

@@ -1,4 +1,5 @@
 import bcrypt from "bcrypt";
+import mongoose from "mongoose";
 import { UserModel } from "../../../../database/models/user";
 import {
   sendVerificationLinkToOwner,
@@ -68,7 +69,12 @@ export default async (_, args: MutationSignupArgs) => {
     };
   }
 
-  const location = await OfficeLocationModel.create({ name: "Head Office" });
+  const userId = new mongoose.Types.ObjectId();
+
+  const location = await OfficeLocationModel.create({
+    name: "Head Office",
+    createdBy: userId,
+  });
 
   const createCompany = await CompanyModel.create({
     name: companyName,
@@ -76,9 +82,30 @@ export default async (_, args: MutationSignupArgs) => {
     location: location._id,
   });
 
+  await OfficeLocationModel.findByIdAndUpdate(
+    { _id: location._id },
+    { company: createCompany._id },
+  );
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const savedUser = await UserModel.create({
+    _id: userId,
+    createdBy: userId,
+    firstName,
+    lastName,
+    email,
+    phoneNo,
+    password: hashedPassword,
+    address,
+    company: createCompany._id,
+    role: "admin",
+    location: location._id,
+  });
 
   const agreement = await AgreementModel.create({
     company: createCompany._id,
+    createdBy: userId,
     title: agreementData.title,
     content: agreementData.content,
   });
@@ -91,29 +118,6 @@ export default async (_, args: MutationSignupArgs) => {
       },
     });
   }
-
-  await OfficeLocationModel.findByIdAndUpdate(
-    { _id: location._id },
-    { company: createCompany._id },
-  );
-  // 4. Hash the password using bcrypt
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  // 5. Create new user
-  const newUser = new UserModel({
-    firstName,
-    lastName,
-    email,
-    phoneNo,
-    password: hashedPassword,
-    address,
-    company: createCompany._id,
-    role: "admin",
-    location: location._id,
-  });
-
-  // 6. Save user to DB
-  const savedUser = await newUser.save();
 
   const fullName = `${savedUser.firstName ?? ""} ${savedUser.lastName ?? ""}`.trim();
 

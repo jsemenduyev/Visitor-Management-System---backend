@@ -5,7 +5,7 @@ export default async (args: any, ctx: any) => {
   const { location } = args;
   const company = ctx?.user?.company;
 
-  const ownedLocation = await assertLocationBelongsToCompany(location, company);
+  const ownedLocation = await assertLocationBelongsToCompany(location, company, ctx.user._id);
   if (!ownedLocation) {
     return [];
   }

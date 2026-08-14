@@ -1,13 +1,16 @@
 import { UserModel } from "../../../../database/models/user";
 import { sendOtpEmail } from "../../../../utils/otpEmail";
-import { signToken } from "../../../services/authJwt";
+
+const normalizeEmail = (email?: string | null) =>
+  String(email || "").trim().toLowerCase();
 
 export default async (_, args) => {
   try {
     const { email } = args;
+    const normalizedEmail = normalizeEmail(email);
 
-    const user = await UserModel.findOne({ email });
-    if (!user) {
+    const users = await UserModel.find({ email: normalizedEmail });
+    if (!users.length) {
       return {
         error: {
           message: "Employee Not Found",
@@ -15,7 +18,9 @@ export default async (_, args) => {
         },
       };
     }
-    if (!user.status) {
+
+    const verifiedUsers = users.filter((user) => user.status);
+    if (!verifiedUsers.length) {
       return {
         error: {
           message: "Employee Not Verified",
@@ -24,22 +29,18 @@ export default async (_, args) => {
       };
     }
 
-    // Generate 6-digit OTP
-    const otp = "123456"
-    Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiry = Date.now() + 1 * 60 * 1000;
 
-    // Set OTP expiry = 1 minute from now
+    await UserModel.updateMany(
+      { _id: { $in: verifiedUsers.map((user) => user._id) } },
+      { $set: { otp, otpExpiry } },
+    );
 
-    // Save OTP + expiry
-    user.otp = otp;
-    user.otpExpiry = Date.now() + 1 * 60 * 1000; // number ✔
-    await user.save();
-
-    // Send OTP email
-    await sendOtpEmail(user.firstName || "User", otp, email);
+    await sendOtpEmail(verifiedUsers[0].firstName || "User", otp, normalizedEmail);
 
     return {
-      user: user,
+      user: verifiedUsers[0],
     };
   } catch (error) {
     return {

@@ -6,7 +6,7 @@ export default async (args: QueryGetSpacesArgs, ctx) => {
   const { location, space, resourceCategory } = args;
   const company = ctx?.user?.company;
 
-  const ownedLocation = await assertLocationBelongsToCompany(location, company);
+  const ownedLocation = await assertLocationBelongsToCompany(location, company, ctx.user._id);
   if (!ownedLocation) {
     return [];
   }

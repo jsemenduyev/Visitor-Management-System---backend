@@ -2,8 +2,12 @@ import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { CompanyModel } from "../../../../database/models/company";
 import { UserModel } from "../../../../database/models/user";
-import { sendEmployeeWelcomeEmail } from "../../../../utils/email";
+import {
+  sendEmployeeWelcomeEmail,
+  sendEmployeeWelcomeOnlyEmail,
+} from "../../../../utils/email";
 import { MutationCreateUserArgs } from "../../../generated/graphql";
+import { createHeadOfficeForAdmin } from "../../utils/locationOwnerScope";
 
 const generateTempPassword = () =>
   crypto.randomBytes(5).toString("base64url").slice(0, 10);
@@ -18,8 +22,12 @@ export default async (args: MutationCreateUserArgs, ctx: any) => {
     const { input } = args;
     const { user } = ctx;
     const company = user.company;
+    const email = String(input.email || "").trim().toLowerCase();
 
-    const existingEmployee = await UserModel.findOne({ email: input.email });
+    const existingEmployee = await UserModel.findOne({
+      email,
+      createdBy: user._id,
+    });
     if (existingEmployee) {
       return {
         error: {
@@ -50,7 +58,9 @@ export default async (args: MutationCreateUserArgs, ctx: any) => {
 
     const createPayload: Record<string, any> = {
       ...rest,
+      email,
       company,
+      createdBy: user._id,
     };
 
     if (requiresWebsiteAccess) {
@@ -65,36 +75,54 @@ export default async (args: MutationCreateUserArgs, ctx: any) => {
 
     const createdEmployee = await UserModel.create(createPayload);
 
-    if (requiresWebsiteAccess && tempPassword) {
-      try {
-        const fullName =
-          `${createdEmployee.firstName ?? ""} ${createdEmployee.lastName ?? ""}`.trim() ||
-          "User";
+    if (String(createdEmployee.role || "").toLowerCase() === "admin") {
+      await createHeadOfficeForAdmin({
+        userId: createdEmployee._id,
+        companyId: company,
+      });
+    }
 
+    const fullName =
+      `${createdEmployee.firstName ?? ""} ${createdEmployee.lastName ?? ""}`.trim() ||
+      "User";
+
+    try {
+      if (requiresWebsiteAccess && tempPassword) {
         await sendEmployeeWelcomeEmail(
           createdEmployee._id.toString(),
           fullName,
           createdEmployee.email,
           tempPassword,
         );
-      } catch (emailError) {
-        console.error("Failed to send employee welcome email:", emailError);
-        return {
-          user: createdEmployee,
-          error: {
-            message:
-              "Employee created but welcome email could not be sent. Please contact support.",
-            code: "EMAIL_SEND_FAILED",
-          },
-        };
+      } else {
+        await sendEmployeeWelcomeOnlyEmail(fullName, createdEmployee.email);
       }
+    } catch (emailError) {
+      console.error("Failed to send employee welcome email:", emailError);
+      return {
+        user: createdEmployee,
+        error: {
+          message:
+            "Employee created but welcome email could not be sent. Please contact support.",
+          code: "EMAIL_SEND_FAILED",
+        },
+      };
     }
 
     return {
       user: createdEmployee,
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating employee:", error);
+
+    if (error?.code === 11000) {
+      return {
+        error: {
+          message: "Employee Already Exists",
+          code: "ALREADY_EXIST",
+        },
+      };
+    }
 
     return {
       error: {

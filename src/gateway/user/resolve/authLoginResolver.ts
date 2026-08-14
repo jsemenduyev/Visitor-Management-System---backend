@@ -2,13 +2,16 @@ import { UserModel } from "../../../../database/models/user";
 import bcrypt from "bcrypt";
 import { signToken } from "../../../services/authJwt";
 import { MutationAuthLoginArgs } from "../../../generated/graphql";
+
+const normalizeEmail = (email?: string | null) =>
+  String(email || "").trim().toLowerCase();
+
 export default async (_, args: MutationAuthLoginArgs) => {
   try {
     const { email, password } = args;
+    const candidates = await UserModel.find({ email: normalizeEmail(email) }).lean();
 
-    // 1. Check if user exists
-    const user = await UserModel.findOne({ email }).lean();
-    if (!user) {
+    if (!candidates.length) {
       return {
         error: {
           message: "User not found",
@@ -18,30 +21,20 @@ export default async (_, args: MutationAuthLoginArgs) => {
         user: null,
       };
     }
-    if (!user.password) {
-      return {
-        error: {
-          message: "Invalid credentials",
-          code: "INVALID_PASSWORD",
-        },
-        token: null,
-        user: null,
-      };
+
+    let user: (typeof candidates)[number] | null = null;
+    for (const candidate of candidates) {
+      if (!candidate.password || candidate.role === "employee") {
+        continue;
+      }
+      const isMatch = await bcrypt.compare(password, candidate.password);
+      if (isMatch) {
+        user = candidate;
+        break;
+      }
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return {
-        error: {
-          message: "Invalid credentials",
-          code: "INVALID_PASSWORD",
-        },
-        token: null,
-        user: null,
-      };
-    }
-
-    if (user.role === "employee") {
+    if (!user) {
       return {
         error: {
           message: "Invalid credentials",
@@ -60,7 +53,7 @@ export default async (_, args: MutationAuthLoginArgs) => {
         },
       };
     }
-    // 3. Create JWT token
+
     const token = signToken({
       _id: user._id.toString(),
       name: user.firstName,

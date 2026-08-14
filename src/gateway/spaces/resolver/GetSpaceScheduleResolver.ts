@@ -10,7 +10,7 @@ export default async (args: any, ctx: any) => {
   const { location, startDate, endDate, space } = args;
   const company = ctx?.user?.company;
 
-  const ownedLocation = await assertLocationBelongsToCompany(location, company);
+  const ownedLocation = await assertLocationBelongsToCompany(location, company, ctx.user._id);
   if (!ownedLocation) {
     return [];
   }
@@ -29,6 +29,7 @@ export default async (args: any, ctx: any) => {
     location,
     start,
     end,
+    createdBy: ctx.user._id,
   });
 
   return spaces.map((s: any) => {

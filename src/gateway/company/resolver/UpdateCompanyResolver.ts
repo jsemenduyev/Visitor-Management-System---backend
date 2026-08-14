@@ -2,6 +2,10 @@ import OfficeLocationModel from "../../../../database/models/officelocations";
 import { MutationUpdateCompanyArgs } from "../../../generated/graphql";
 import QRCode from "qrcode";
 import crypto from "crypto";
+import {
+  getAdminLocationSettings,
+  mergeSettings,
+} from "../../utils/adminLocationSettings";
 
 const contactLessBaseUrl = () =>
   (process.env.CONTACTLESS_URL || process.env.FRONTEND_URL || "").replace(
@@ -48,15 +52,27 @@ export default async (args: MutationUpdateCompanyArgs, ctx: any) => {
     const existing = await OfficeLocationModel.findOne({
       _id: input.locationId,
       company: companyId,
-    });
+      createdBy: ctx.user._id,
+    }).select("+settingsByAdmin");
+
+    if (!existing) {
+      return {
+        error: { message: "Location not found", code: "NOT_FOUND" },
+      };
+    }
 
     let newInput: Record<string, any> = { ...input };
     // Don't persist GraphQL helper field onto the location document
     delete newInput.locationId;
 
+    const authUser = ctx?.user;
+    const existingSettings = getAdminLocationSettings(existing, authUser._id);
+
     if (input.contactLess?.enabled) {
       const token =
-        existing?.contactLess?.token || crypto.randomBytes(16).toString("hex");
+        existingSettings?.contactLess?.token ||
+        existing?.contactLess?.token ||
+        crypto.randomBytes(16).toString("hex");
       const { qrCode } = await buildContactLessQr(token);
 
       newInput = {
@@ -69,19 +85,23 @@ export default async (args: MutationUpdateCompanyArgs, ctx: any) => {
       };
     }
 
-    const updatedLocation = await OfficeLocationModel.findOneAndUpdate(
-      { _id: input.locationId, company: companyId },
-      { $set: newInput },
-      { new: true },
-    ).lean();
+    if (Object.keys(newInput).length > 0) {
+      const adminId = String(authUser._id);
+      const updatedSettings = mergeSettings(existingSettings, newInput);
+      const updatedLocation = await OfficeLocationModel.findOneAndUpdate(
+        { _id: input.locationId, company: companyId, createdBy: authUser._id },
+        { $set: { [`settingsByAdmin.${adminId}`]: updatedSettings } },
+        { new: true },
+      ).lean();
 
-    if (!updatedLocation) {
-      return {
-        error: {
-          message: "Location not found",
-          code: "NOT_FOUND",
-        },
-      };
+      if (!updatedLocation) {
+        return {
+          error: {
+            message: "Location not found",
+            code: "NOT_FOUND",
+          },
+        };
+      }
     }
 
     return "Location data updated successfully";

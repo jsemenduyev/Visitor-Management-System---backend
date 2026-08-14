@@ -8,7 +8,8 @@ export default async (args: any, ctx: any) => {
 
   const ownedLocation = await assertLocationBelongsToCompany(
     input?.location,
-    company
+    company,
+    ctx.user._id
   );
   if (!ownedLocation) {
     return {
