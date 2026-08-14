@@ -17,6 +17,10 @@ import getDeviceVisitorsResolver from "./resolver/getDeviceVisitorsResolver";
 import { SortedInput } from "./types/SortedInput";
 import { EvacuationList } from "./types/EvacuationList";
 import getEvacuationListResolver from "./resolver/getEvacuationListResolver";
+import {
+  isAdminOrManager,
+  isAUthenticated,
+} from "../../middleware/isAuthenticated";
 
 export const visitorQuery = {
   getVistors: {
@@ -53,7 +57,8 @@ export const visitorQuery = {
         type: GraphQLString,
       },
     },
-    resolve: getVisitorsResolver,
+    resolve: (_, args, ctx) =>
+      isAdminOrManager(args, ctx, getVisitorsResolver),
   },
   getDeviceVisiotr: {
     type: VisitorList,
@@ -85,7 +90,8 @@ export const visitorQuery = {
       limit: { type: GraphQLInt },
       offset: { type: GraphQLInt },
     },
-    resolve: getEvacuationListResolver,
+    resolve: (_, args, ctx) =>
+      isAUthenticated(args, ctx, getEvacuationListResolver),
   },
 };
 
@@ -97,6 +103,7 @@ export const visitorMutation = {
         type: VisitorInput,
       },
     },
+    // Device/QR may call without JWT; dashboard JWT stamps createdBy.
     resolve: createVisitorResolver,
   },
   updateVisitor: {

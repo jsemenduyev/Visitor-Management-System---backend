@@ -10,6 +10,6 @@ export default async (args: any, ctx: any) => {
     return [];
   }
 
-  const categories = await SpaceCategoryModel.find({ location }).lean();
+  const categories = await SpaceCategoryModel.find({ location, createdBy: ctx.user._id }).lean();
   return categories;
 };

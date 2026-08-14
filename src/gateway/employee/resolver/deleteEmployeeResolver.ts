@@ -1,11 +1,13 @@
 import { UserModel } from "../../../../database/models/user";
 import DepartmentModel from "../../../../database/models/department";
 import { MutationDeleteEmployeeArgs } from "../../../generated/graphql";
+import { dashboardOwnerFilter } from "../../utils/ownerScope";
 
 export default async (args: MutationDeleteEmployeeArgs, ctx) => {
   try {
     const { employeeId } = args;
-    const company = ctx?.user?.company;
+    const authUser = ctx?.user;
+    const company = authUser?.company;
 
     if (!employeeId) {
       throw new Error("Employee ID is required");
@@ -15,7 +17,10 @@ export default async (args: MutationDeleteEmployeeArgs, ctx) => {
       throw new Error("User does not belong to any company");
     }
 
-    const user = await UserModel.findOne({ _id: employeeId, company });
+    const user = await UserModel.findOne({
+      _id: employeeId,
+      ...dashboardOwnerFilter(authUser),
+    });
 
     if (!user) {
       throw new Error("Employee not found");

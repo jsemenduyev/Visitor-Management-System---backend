@@ -15,7 +15,7 @@ export default async (args: any, ctx: any) => {
     return [];
   }
 
-  const query: any = { location };
+  const query: any = { location, createdBy: ctx.user._id };
   if (space) query._id = space;
 
   const spaces = await SpaceModel.find(query).lean();

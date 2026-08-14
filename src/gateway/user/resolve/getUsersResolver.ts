@@ -1,5 +1,6 @@
 import { UserModel } from "../../../../database/models/user";
 import { QueryGetUsersArgs } from "../../../generated/graphql";
+import { dashboardEmployeeFilter } from "../../utils/ownerScope";
 
 export default async (args: QueryGetUsersArgs, ctx) => {
   try {
@@ -12,17 +13,27 @@ export default async (args: QueryGetUsersArgs, ctx) => {
       companyId = dbUser?.company;
     }
 
-    // Build search query
+    const employeeScope = dashboardEmployeeFilter(user);
+
+    // Build search query — keep ownership $or separate from search $or via $and
     const query: any = {
-      company: companyId,
+      company: employeeScope.company,
       isArchived: { $ne: true },
+      $and: [{ $or: employeeScope.$or }],
     };
+
+    // #region agent log
+    fetch('http://127.0.0.1:7549/ingest/5c6ee3ea-693f-48e7-9dec-c63993115624',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'5f6d2e'},body:JSON.stringify({sessionId:'5f6d2e',runId:'post-fix',location:'getUsersResolver.ts:query',message:'getUsers query built',data:{requestorId:String(user?._id||''),requestorRole:user?.role,companyId:String(companyId||''),hasCreatedByFilter:true,usesEmployeeScope:true},timestamp:Date.now(),hypothesisId:'H1-fix'})}).catch(()=>{});
+    // #endregion
+
     let sort = {};
     if (search && search.trim() !== "") {
-      query.$or = [
-        { firstName: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
-      ];
+      query.$and.push({
+        $or: [
+          { firstName: { $regex: search, $options: "i" } },
+          { email: { $regex: search, $options: "i" } },
+        ],
+      });
     }
     if (location) {
       query.location = location;
@@ -51,6 +62,10 @@ export default async (args: QueryGetUsersArgs, ctx) => {
       .sort(sorted?.columnId ? sort : { createdAt: -1 })
       .lean();
     const count = await UserModel.countDocuments(query);
+
+    // #region agent log
+    fetch('http://127.0.0.1:7549/ingest/5c6ee3ea-693f-48e7-9dec-c63993115624',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'5f6d2e'},body:JSON.stringify({sessionId:'5f6d2e',runId:'post-fix',location:'getUsersResolver.ts:result',message:'getUsers result',data:{requestorId:String(user?._id||''),count,returnedIds:hosts.slice(0,10).map((h:any)=>String(h._id)),returnedEmails:hosts.slice(0,10).map((h:any)=>h.email)},timestamp:Date.now(),hypothesisId:'H1-fix'})}).catch(()=>{});
+    // #endregion
 
     return {
       user: hosts,

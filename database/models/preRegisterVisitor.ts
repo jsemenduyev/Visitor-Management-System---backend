@@ -46,6 +46,12 @@ const PreRegisterVisitorSchema = new Schema(
     message: {
       type: String,
     },
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+      index: true,
+    },
   },
   { timestamps: true }
 );

@@ -18,6 +18,7 @@ const SpaceSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: "officelocations",
   },
+  createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
 });
 const SpaceModel = model("spaces", SpaceSchema);
 export default SpaceModel;

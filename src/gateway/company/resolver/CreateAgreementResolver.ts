@@ -19,6 +19,7 @@ export default async (args: MutationCreateAgreementArgs, ctx) => {
       const agreement = await AgreementModel.findOne({
         _id: args.id,
         company: companyId,
+        createdBy: ctx.user._id,
       });
 
       if (!agreement) {
@@ -35,6 +36,7 @@ export default async (args: MutationCreateAgreementArgs, ctx) => {
 
     const agreement = new AgreementModel({
       company: companyId,
+      createdBy: ctx.user._id,
       title: args.title,
       content: args.content,
       requireSignature: args.requireSignature ?? false,

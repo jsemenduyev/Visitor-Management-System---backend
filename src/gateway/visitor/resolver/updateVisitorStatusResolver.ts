@@ -1,14 +1,29 @@
 import VisitorModel from "../../../../database/models/visitor";
 import { MutationUpdateVisitorStatusArgs } from "../../../generated/graphql";
+import { dashboardOwnerFilter } from "../../utils/ownerScope";
 
-export default async (_, args: MutationUpdateVisitorStatusArgs) => {
+export default async (
+  _: any,
+  args: MutationUpdateVisitorStatusArgs,
+  ctx?: any,
+) => {
   try {
     const { visitorId } = args;
+    const authUser = ctx?.user;
 
-    const visitor = await VisitorModel.findByIdAndUpdate(
-      visitorId, // ✅ just pass the ID
-      { signedType: "Out", signedOut: new Date().toISOString(),signedOutDevice:"Mobile" }, // update object
-      { new: true } // return updated document
+    const filter: Record<string, any> = { _id: visitorId };
+    if (authUser) {
+      Object.assign(filter, dashboardOwnerFilter(authUser));
+    }
+
+    const visitor = await VisitorModel.findOneAndUpdate(
+      filter,
+      {
+        signedType: "Out",
+        signedOut: new Date().toISOString(),
+        signedOutDevice: "Mobile",
+      },
+      { new: true },
     ).lean();
 
     if (!visitor) {

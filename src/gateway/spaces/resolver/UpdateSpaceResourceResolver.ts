@@ -5,7 +5,7 @@ export default async (args: any, ctx: any) => {
   const { _id, input } = args;
   const company = ctx?.user?.company;
 
-  const existing = await SpaceResourceModel.findById(_id).lean();
+  const existing = await SpaceResourceModel.findOne({ _id, createdBy: ctx.user._id }).lean();
   if (!existing) {
     return {
       resource: null,
@@ -61,7 +61,7 @@ export default async (args: any, ctx: any) => {
     };
   }
 
-  const resource = await SpaceResourceModel.findByIdAndUpdate(_id, input, {
+  const resource = await SpaceResourceModel.findOneAndUpdate({ _id, createdBy: ctx.user._id }, input, {
     new: true,
   });
 

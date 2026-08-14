@@ -21,7 +21,7 @@ export default async (args: QueryGetDepartmentsArgs, ctx) => {
 
 
     // Fetch department with pagination
-    const department = await DepartmentModel.find({ company: user.company, ...query })
+    const department = await DepartmentModel.find({ company: user.company, createdBy: user._id, ...query })
       .populate("user")
       .populate("location")
       .skip(offset)
@@ -30,6 +30,7 @@ export default async (args: QueryGetDepartmentsArgs, ctx) => {
 
     const count = await DepartmentModel.countDocuments({
       company: user.company,
+      createdBy: user._id,
       ...query,
     });
     return {

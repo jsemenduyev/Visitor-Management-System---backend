@@ -1,7 +1,7 @@
 import visitorCategory from "../../../../database/models/visitorCategory";
 import { MutationDeleteCategoryArgs } from "../../../generated/graphql";
 
-export default async (_, args: MutationDeleteCategoryArgs) => {
+export default async (_, args: MutationDeleteCategoryArgs, ctx: any) => {
   try {
     const { categoryId } = args;
 
@@ -9,11 +9,15 @@ export default async (_, args: MutationDeleteCategoryArgs) => {
       throw new Error("CategoryId  are required");
     }
 
-    const category = await visitorCategory.findById(categoryId);
+    const category = await visitorCategory.findOne({
+      _id: categoryId,
+      company: ctx.user.company,
+      createdBy: ctx.user._id,
+    });
     if (!category) {
       throw new Error("Category not found");
     }
-    await visitorCategory.findByIdAndDelete(categoryId);
+    await visitorCategory.deleteOne({ _id: categoryId, createdBy: ctx.user._id });
     return "Category deleted successfully";
   } catch (error) {
     console.error("Error deleting ficategoryeld:", error);

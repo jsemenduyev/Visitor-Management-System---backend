@@ -5,7 +5,7 @@ export default async (args: any, ctx: any) => {
   const { _id, input } = args;
   const company = ctx?.user?.company;
 
-  const existing = await SpaceCategoryModel.findById(_id).lean();
+  const existing = await SpaceCategoryModel.findOne({ _id, createdBy: ctx.user._id }).lean();
   if (!existing) {
     return {
       category: null,
@@ -46,7 +46,7 @@ export default async (args: any, ctx: any) => {
     }
   }
 
-  const category = await SpaceCategoryModel.findByIdAndUpdate(_id, input, {
+  const category = await SpaceCategoryModel.findOneAndUpdate({ _id, createdBy: ctx.user._id }, input, {
     new: true,
   });
 

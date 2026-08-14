@@ -1,9 +1,11 @@
 import { UserModel } from "../../../../database/models/user";
+import { dashboardOwnerFilter } from "../../utils/ownerScope";
 
 export default async (args: { employeeId: string }, ctx) => {
   try {
     const { employeeId } = args;
-    const company = ctx?.user?.company;
+    const authUser = ctx?.user;
+    const company = authUser?.company;
 
     if (!employeeId) {
       throw new Error("Employee ID is required");
@@ -15,7 +17,7 @@ export default async (args: { employeeId: string }, ctx) => {
 
     const user = await UserModel.findOne({
       _id: employeeId,
-      company,
+      ...dashboardOwnerFilter(authUser),
       isArchived: true,
     });
 
@@ -24,7 +26,7 @@ export default async (args: { employeeId: string }, ctx) => {
     }
 
     const restored = await UserModel.findOneAndUpdate(
-      { _id: employeeId, company, isArchived: true },
+      { _id: employeeId, ...dashboardOwnerFilter(authUser), isArchived: true },
       { isArchived: false, archivedAt: null },
       { new: true }
     );

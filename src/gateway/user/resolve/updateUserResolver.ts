@@ -1,11 +1,13 @@
 import DepartmentModel from "../../../../database/models/department";
 import { UserModel } from "../../../../database/models/user";
 import { MutationUpdateUserArgs } from "../../../generated/graphql";
+import { dashboardEmployeeFilter } from "../../utils/ownerScope";
 
 export default async (args: MutationUpdateUserArgs, ctx) => {
   try {
     const { input } = args;
-    const company = ctx?.user?.company;
+    const authUser = ctx?.user;
+    const company = authUser?.company;
 
     if (!company) {
       return {
@@ -15,8 +17,11 @@ export default async (args: MutationUpdateUserArgs, ctx) => {
 
     const { _id, department, company: _ignoredCompany, ...updateFields } = input as any;
 
-    // Find user by ID scoped to caller's company
-    const user: any = await UserModel.findOne({ _id, company });
+    // Find user by ID scoped to caller's company and ownership
+    const user: any = await UserModel.findOne({
+      _id,
+      ...dashboardEmployeeFilter(authUser),
+    });
     if (!user) {
       return {
         error: { message: "user Not Found", code: "NOT_EXIST" },

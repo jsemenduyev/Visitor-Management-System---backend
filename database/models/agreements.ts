@@ -12,6 +12,12 @@ const AgreementSchema = new Schema(
       ref: "company", // Make sure your model name matches exactly
       required: true,
     },
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
     content: {
       type: String, // store Quill HTML or Delta JSON
       required: true,

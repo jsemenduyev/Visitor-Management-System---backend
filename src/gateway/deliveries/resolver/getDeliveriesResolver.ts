@@ -3,6 +3,7 @@ import { Types } from "mongoose";
 import DeliveryModel from "../../../../database/models/deliveries";
 import { QueryGetDeliveriesArgs } from "../../../generated/graphql";
 import { UserModel } from "../../../../database/models/user";
+import { dashboardOwnerFilter } from "../../utils/ownerScope";
 const US_TIMEZONE = "America/New_York"; // change if needed
 
 export default async (args: QueryGetDeliveriesArgs, ctx) => {
@@ -20,7 +21,7 @@ export default async (args: QueryGetDeliveriesArgs, ctx) => {
     const { user } = ctx;
 
     let query: any = {
-      company: user.company,
+      ...dashboardOwnerFilter(user),
     };
 
     if (location) {

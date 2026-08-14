@@ -23,6 +23,7 @@ export default async (args: { id: string }, ctx: any) => {
         const agreement = await AgreementModel.findOneAndDelete({
             _id: args.id,
             company: companyId,
+            createdBy: ctx.user._id,
         });
 
         if (!agreement) {

@@ -37,6 +37,7 @@ export default async (args: any, ctx: any) => {
     const space = await SpaceModel.findOne({
       _id: input.space,
       location: input.location,
+      createdBy: ctx.user._id,
     }).lean();
     if (!space) {
       return {
@@ -53,6 +54,7 @@ export default async (args: any, ctx: any) => {
     resourceCategory: input?.resourceCategory,
     location: input?.location,
     space: input?.space,
+    createdBy: ctx.user._id,
   });
   if (existing) {
     return {
@@ -63,7 +65,7 @@ export default async (args: any, ctx: any) => {
     };
   }
 
-  const createResource = await SpaceResourceModel.create(input);
+  const createResource = await SpaceResourceModel.create({ ...input, createdBy: ctx.user._id });
   return {
     resource: createResource,
   };

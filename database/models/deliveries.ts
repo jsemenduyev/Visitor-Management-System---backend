@@ -36,6 +36,12 @@ const DeliverySchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "officelocations",
     },
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+      index: true,
+    },
   },
   { timestamps: true },
 );

@@ -83,7 +83,8 @@ export const deliveryMutation = {
     args: {
       input: { type: UpdateDeliveryInput },
     },
-    resolve: updateDeliveryResolver,
+    resolve: (_, args, ctx) =>
+      isAdminOrManager(args, ctx, updateDeliveryResolver),
   },
   deleteDelivery: {
     type: GraphQLString,
