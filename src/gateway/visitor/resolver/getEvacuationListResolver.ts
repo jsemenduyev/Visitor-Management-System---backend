@@ -59,7 +59,7 @@ const getVisitorContactDetails = (visitor: any) => {
   );
 
   if (address) lines.push(address);
-  if (phone) lines.push(phone);
+  if (phone) lines.push(`Visitor: ${phone}`);
   if (email) lines.push(email);
 
   if (lines.length > 0) return lines.join("\n");
