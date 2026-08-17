@@ -26,7 +26,16 @@ const FieldSchema = new mongoose.Schema<IField>({
   label: { type: String },
   type: {
     type: String,
-    enum: ["text", "phone", "email", "date", "checkbox", "radio", "file"],
+    enum: [
+      "text",
+      "phone",
+      "email",
+      "date",
+      "checkbox",
+      "radio",
+      "multi_choice",
+      "file",
+    ],
     default: "text",
   },
   required: { type: Boolean, default: false },

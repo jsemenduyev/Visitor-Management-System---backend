@@ -3,6 +3,7 @@ import OfficeLocationModel from "../../../../database/models/officelocations";
 import VisitorCategoryModel from "../../../../database/models/visitorCategory";
 import { MutationAddLocationArgs } from "../../../generated/graphql";
 import { dashboardLocationFilter } from "../../utils/locationOwnerScope";
+import mongoose from "mongoose";
 
 const LOCATION_IDENTITY_FIELDS = new Set([
     "_id",
@@ -57,6 +58,15 @@ const copyLocationSettings = (
     }
 };
 
+const CATEGORY_IDENTITY_FIELDS = new Set([
+    "_id",
+    "company",
+    "location",
+    "createdAt",
+    "updatedAt",
+    "__v",
+]);
+
 const cloneVisitorCategories = async (
     sourceLocationId: string,
     newLocationId: unknown,
@@ -72,24 +82,19 @@ const cloneVisitorCategories = async (
     }
 
     await VisitorCategoryModel.insertMany(
-        categories.map((category) => ({
-            name: category.name,
-            enabled: category.enabled,
-            approval: category.approval,
-            host: category.host,
-            priority: category.priority,
-            company,
-            location: newLocationId,
-            fields: (category.fields ?? []).map((field) => ({
-                name: field.name,
-                label: field.label,
-                type: field.type,
-                required: field.required,
-                enabled: field.enabled,
-                priority: field.priority,
-                clearResponseAfterEachVisit: field.clearResponseAfterEachVisit,
-            })),
-        })),
+        categories.map((category) => {
+            const clonedCategory = Object.fromEntries(
+                Object.entries(category).filter(
+                    ([key]) => !CATEGORY_IDENTITY_FIELDS.has(key),
+                ),
+            );
+
+            return {
+                ...clonedCategory,
+                company,
+                location: newLocationId,
+            };
+        }),
     );
 
     return categories.length;
@@ -132,27 +137,50 @@ export default async (args: MutationAddLocationArgs, ctx: any) => {
             return { location }
         } else {
             const copyFromLocationId = argsWithCoords.copyFromLocationId as string | undefined;
+            let sourceLocation: Record<string, unknown> | null = null;
 
             if (copyFromLocationId) {
-                const sourceLocation = await OfficeLocationModel.findOne({
+                if (!mongoose.isValidObjectId(copyFromLocationId)) {
+                    return {
+                        error: {
+                            message: "The location selected for copying is invalid",
+                            code: "INVALID_COPY_SOURCE",
+                        },
+                    };
+                }
+
+                const source = await OfficeLocationModel.findOne({
                     _id: copyFromLocationId,
                     ...dashboardLocationFilter(user),
                 }).lean();
 
-                if (sourceLocation) {
-                    copyLocationSettings(sourceLocation as Record<string, unknown>, updateData);
+                if (!source) {
+                    return {
+                        error: {
+                            message: "The location selected for copying was not found",
+                            code: "COPY_SOURCE_NOT_FOUND",
+                        },
+                    };
                 }
+
+                sourceLocation = source as Record<string, unknown>;
+                copyLocationSettings(sourceLocation, updateData);
             }
 
             const location = new OfficeLocationModel(updateData)
             await location.save()
 
-            if (copyFromLocationId) {
-                await cloneVisitorCategories(
-                    copyFromLocationId,
-                    location._id,
-                    company,
-                );
+            if (copyFromLocationId && sourceLocation) {
+                try {
+                    await cloneVisitorCategories(
+                        copyFromLocationId,
+                        location._id,
+                        company,
+                    );
+                } catch (copyError) {
+                    await OfficeLocationModel.deleteOne({ _id: location._id, company });
+                    throw copyError;
+                }
             }
 
             await CompanyModel.findByIdAndUpdate(company, {

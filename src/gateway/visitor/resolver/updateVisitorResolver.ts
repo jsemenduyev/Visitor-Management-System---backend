@@ -209,11 +209,13 @@ async function notifyVisitorHosts(visitor: any) {
         return;
       }
 
+      const hostFirstName =
+        user.firstName?.trim() || user.name?.trim().split(/\s+/)[0] || "there";
       const msg =
         type === "arrival"
-          ? `Hello, A new visitor, ${visitorName}${
+          ? `Hello ${hostFirstName}, new visitor, ${visitorName}${
               dataObj.companyName ? ` (${dataObj.companyName})` : ""
-            }, is here to meet you. — Maximal Security`
+            }, is here to meet you. Maximal Security`
           : `Hello, A new visitor, ${visitorName}, requires approval. Please check your email. — Maximal Security`;
 
       await sendTwilioMessage(user.phone, msg);
