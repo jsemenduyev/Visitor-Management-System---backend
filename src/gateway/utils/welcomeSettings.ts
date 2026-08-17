@@ -26,7 +26,7 @@ export const defaultVisitorButton = () => ({
   buttonBg: "#ffffff",
 });
 
-export function resolveUserWelcomeSettings(userDoc: {
+type LegacyWelcomeSettingsDocument = {
   welcomeSettings?: {
     savedImgs?: { url: string; enabled?: boolean }[];
     visitorButton?: {
@@ -35,12 +35,19 @@ export function resolveUserWelcomeSettings(userDoc: {
       buttonBg?: string;
     };
   } | null;
-}) {
+};
+
+export function resolveUserWelcomeSettings(userDoc: unknown) {
+  const document =
+    userDoc && typeof userDoc === "object"
+      ? (userDoc as LegacyWelcomeSettingsDocument)
+      : {};
+
   return {
-    savedImgs: userDoc?.welcomeSettings?.savedImgs?.length
-      ? userDoc.welcomeSettings.savedImgs
+    savedImgs: document.welcomeSettings?.savedImgs?.length
+      ? document.welcomeSettings.savedImgs
       : defaultWelcomeSavedImgs(),
     visitorButton:
-      userDoc?.welcomeSettings?.visitorButton || defaultVisitorButton(),
+      document.welcomeSettings?.visitorButton || defaultVisitorButton(),
   };
 }
