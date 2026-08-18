@@ -2,6 +2,7 @@ import { CompanyModel } from "../../../../database/models/company";
 import OfficeLocationModel from "../../../../database/models/officelocations";
 import VisitorCategoryModel from "../../../../database/models/visitorCategory";
 import { MutationAddLocationArgs } from "../../../generated/graphql";
+import { getAdminLocationSettings } from "../../utils/adminLocationSettings";
 import { dashboardLocationFilter } from "../../utils/locationOwnerScope";
 import mongoose from "mongoose";
 
@@ -16,6 +17,7 @@ const LOCATION_IDENTITY_FIELDS = new Set([
     "createdAt",
     "updatedAt",
     "__v",
+    "settingsByAdmin",
 ]);
 
 const BADGE_TYPES = new Set(["standard", "photo", "simple"]);
@@ -43,6 +45,16 @@ const sanitizeCopiedSettings = (
     }
 
     return value;
+};
+
+const sanitizeAdminSettingsCopy = (
+    settings: Record<string, unknown>,
+): Record<string, unknown> => {
+    const result: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(settings)) {
+        result[key] = sanitizeCopiedSettings(key, value);
+    }
+    return result;
 };
 
 const copyLocationSettings = (
@@ -152,7 +164,9 @@ export default async (args: MutationAddLocationArgs, ctx: any) => {
                 const source = await OfficeLocationModel.findOne({
                     _id: copyFromLocationId,
                     ...dashboardLocationFilter(user),
-                }).lean();
+                })
+                    .select("+settingsByAdmin")
+                    .lean();
 
                 if (!source) {
                     return {
@@ -165,6 +179,16 @@ export default async (args: MutationAddLocationArgs, ctx: any) => {
 
                 sourceLocation = source as Record<string, unknown>;
                 copyLocationSettings(sourceLocation, updateData);
+
+                const adminSettings = getAdminLocationSettings(
+                    source as Record<string, unknown>,
+                    user._id,
+                );
+                if (Object.keys(adminSettings).length > 0) {
+                    updateData.settingsByAdmin = {
+                        [String(user._id)]: sanitizeAdminSettingsCopy(adminSettings),
+                    };
+                }
             }
 
             const location = new OfficeLocationModel(updateData)

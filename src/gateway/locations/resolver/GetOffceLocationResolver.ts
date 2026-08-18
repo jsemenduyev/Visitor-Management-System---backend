@@ -48,11 +48,20 @@ export default async (args: QueryGetOfficeLocationArgs, ctx: any) => {
 
     const adminSettings = getAdminLocationSettings(ownedLocation, authUser._id);
     const scopedLocation: any = locationForAdmin(ownedLocation as any, authUser._id);
-    // Preserve welcome customizations saved by the previous implementation
-    // until this admin saves the corresponding setting for this location.
+    // Only fall back to legacy user-level welcome when this location has none saved.
     const legacyWelcome = resolveUserWelcomeSettings(userDoc || {});
-    if (!adminSettings.savedImgs) scopedLocation.savedImgs = legacyWelcome.savedImgs;
-    if (!adminSettings.visitorButton) {
+    const hasLocationSavedImgs =
+      Array.isArray(adminSettings.savedImgs) && adminSettings.savedImgs.length > 0
+        ? true
+        : Array.isArray(scopedLocation.savedImgs) && scopedLocation.savedImgs.length > 0;
+    const hasLocationVisitorButton =
+      Boolean(adminSettings.visitorButton) ||
+      Boolean(scopedLocation.visitorButton?.buttonRadius);
+
+    if (!hasLocationSavedImgs) {
+      scopedLocation.savedImgs = legacyWelcome.savedImgs;
+    }
+    if (!hasLocationVisitorButton) {
       scopedLocation.visitorButton = legacyWelcome.visitorButton;
     }
 

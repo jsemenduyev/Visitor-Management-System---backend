@@ -28,6 +28,7 @@ export default async (_: any, args: { sessionKey: string; search: string }) => {
       company: device.company,
       location: device.location,
       isArchived: { $ne: true },
+      createdBy: device.createdBy,
     };
     if (search && search.trim() !== "") {
       query = {
