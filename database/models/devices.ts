@@ -14,6 +14,12 @@ const DeviceSchema = new Schema({
     ref: "company",
     required: true,
   },
+  createdBy: {
+    type: Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+    index: true,
+  },
   department: [
     {
       type: Schema.Types.ObjectId,
@@ -57,7 +63,12 @@ const DeviceSchema = new Schema({
   },
 });
 
-// deviceId + department uniqueness
+// Device names belong to their creator's namespace. Device login codes remain
+// globally generated because deviceLogin only receives a deviceId.
+DeviceSchema.index(
+  { createdBy: 1, deviceName: 1 },
+  { unique: true, name: "createdBy_1_deviceName_1" },
+);
 DeviceSchema.index({ deviceId: 1, department: 1 }, { unique: true });
 
 const DeviceModel = model("devices", DeviceSchema);

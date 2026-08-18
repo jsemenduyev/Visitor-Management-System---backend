@@ -7,6 +7,7 @@ export default async (args: QueryGetDevicesArgs, ctx) => {
 
     const devices = await DeviceModel.find({
       company: user.company,
+      createdBy: user._id,
       location: args.location,
     })
       .populate("department")

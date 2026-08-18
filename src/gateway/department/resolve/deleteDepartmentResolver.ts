@@ -38,7 +38,10 @@ export default async (
 
     /** 2️⃣ REMOVE DEPARTMENT FROM DEVICES */
     await DeviceModel.updateMany(
-      { company: department.company },
+      {
+        company: department.company,
+        createdBy: ctx.user._id,
+      },
       { $pull: { department: departmentId } },
       { session }
     );

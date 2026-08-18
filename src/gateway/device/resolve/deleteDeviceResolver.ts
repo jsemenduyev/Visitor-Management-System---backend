@@ -7,6 +7,7 @@ export default async (args: { id: string }, ctx: any) => {
     const deletedDevice = await DeviceModel.findOneAndDelete({
       _id: id,
       company: ctx.user.company,
+      createdBy: ctx.user._id,
     });
 
     if (!deletedDevice) {

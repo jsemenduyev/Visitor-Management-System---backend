@@ -34,7 +34,11 @@ export default async (args: { locationId: string }, ctx: any) => {
     }
 
     await Promise.all([
-      DeviceModel.deleteMany({ location: location._id }),
+      DeviceModel.deleteMany({
+        location: location._id,
+        company,
+        createdBy: user._id,
+      }),
       SpaceModel.deleteMany({ location: location._id }),
       SpaceCategoryModel.deleteMany({ location: location._id }),
       SpaceResourceModel.deleteMany({ location: location._id }),

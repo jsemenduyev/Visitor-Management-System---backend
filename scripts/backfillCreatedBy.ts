@@ -84,6 +84,25 @@ async function replaceLegacyDepartmentNameIndex() {
   );
 }
 
+async function replaceLegacyDeviceNameIndex() {
+  const indexes = await DeviceModel.collection.indexes();
+  const legacyIndex = indexes.find(
+    (index) =>
+      index.unique === true &&
+      JSON.stringify(index.key) === JSON.stringify({ deviceName: 1 }),
+  );
+
+  if (legacyIndex) {
+    await DeviceModel.collection.dropIndex(legacyIndex.name);
+    console.log("Removed legacy global device-name uniqueness index");
+  }
+
+  await DeviceModel.collection.createIndex(
+    { createdBy: 1, deviceName: 1 },
+    { unique: true, name: "createdBy_1_deviceName_1" },
+  );
+}
+
 async function main() {
   const dbUrl = process.env.DB_URL;
   if (!dbUrl) {
@@ -182,6 +201,10 @@ async function main() {
       adminId,
     );
   }
+
+  // Build this only after devices have owners so legacy null ownership does
+  // not collapse unrelated device names into one uniqueness scope.
+  await replaceLegacyDeviceNameIndex();
 
   await mongoose.disconnect();
   console.log("Done.");

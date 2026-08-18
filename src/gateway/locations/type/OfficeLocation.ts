@@ -57,9 +57,12 @@ export const OfficeLocation = new GraphQLObjectType({
     },
     devices: {
       type: new GraphQLList(DeviceType),
-      resolve: (src) =>
-        src.devices ??
-        DeviceModel.find({ location: src._id })
+      resolve: (src, _args, ctx) =>
+        DeviceModel.find({
+          location: src._id,
+          company: ctx.user.company,
+          createdBy: ctx.user._id,
+        })
           .populate("department")
           .populate("categoryType")
           .lean()

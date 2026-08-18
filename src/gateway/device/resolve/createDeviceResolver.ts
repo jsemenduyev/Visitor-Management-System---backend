@@ -11,13 +11,24 @@ function generateDeviceId(length = 6) {
   return result;
 }
 
-export default async (args: MutationCreateDeviceArgs) => {
+export default async (args: MutationCreateDeviceArgs, ctx: any) => {
   try {
     const { input } = args;
+    const { _id: createdBy, company } = ctx.user;
 
-    // check if device already exists by name
+    if (!company) {
+      return {
+        error: {
+          message: "User does not belong to any company",
+          code: "NO_COMPANY_FOUND",
+        },
+      };
+    }
+
+    // A creator cannot reuse a device name, but another creator can.
     const deviceExist = await DeviceModel.findOne({
       deviceName: input.deviceName,
+      createdBy,
     });
     if (deviceExist) {
       return {
@@ -41,17 +52,30 @@ export default async (args: MutationCreateDeviceArgs) => {
       }
     }
 
+    // Company and ownership always come from the authenticated user.
+    const { company: _ignoredCompany, ...safeInput } = input as any;
     const newInput = {
-      ...input,
+      ...safeInput,
       deviceId,
+      company,
+      createdBy,
     };
 
     const device = await DeviceModel.create(newInput);
 
     return {
-      data: device,
+      device,
     };
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === 11000) {
+      return {
+        error: {
+          message: "Device Already Exists",
+          code: "ALREADY_EXISTS",
+        },
+      };
+    }
+
     return {
       error: {
         message: error.message || "Something went wrong",
