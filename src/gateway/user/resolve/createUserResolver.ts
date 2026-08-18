@@ -63,6 +63,12 @@ export default async (args: MutationCreateUserArgs, ctx: any) => {
       createdBy: user._id,
     };
 
+    if (input.phoneCountryCode) {
+      createPayload.phoneCountryCode = String(input.phoneCountryCode)
+        .trim()
+        .toLowerCase();
+    }
+
     if (requiresWebsiteAccess) {
       tempPassword = generateTempPassword();
       createPayload.password = await bcrypt.hash(tempPassword, 10);

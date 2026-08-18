@@ -58,6 +58,12 @@ export default async (args: MutationUpdateUserArgs, ctx) => {
       );
     }
 
+    if (updateFields.phoneCountryCode) {
+      updateFields.phoneCountryCode = String(updateFields.phoneCountryCode)
+        .trim()
+        .toLowerCase();
+    }
+
     // Update user fields (company cannot be changed via this mutation)
     if (department) {
       user.department = department;

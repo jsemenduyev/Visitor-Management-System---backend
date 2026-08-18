@@ -23,6 +23,7 @@ export default async (_, args: MutationSignupArgs) => {
     lastName,
     email,
     phoneNo,
+    phoneCountryCode,
     password,
     address,
     companyName,
@@ -48,7 +49,7 @@ export default async (_, args: MutationSignupArgs) => {
   }
 
   // 2. Check if user with the same phone number already exists
-  const existingPhoneUser = await UserModel.findOne({ phoneNo });
+  const existingPhoneUser = await UserModel.findOne({ phone: phoneNo });
   if (existingPhoneUser) {
     return {
       error: {
@@ -95,7 +96,8 @@ export default async (_, args: MutationSignupArgs) => {
     firstName,
     lastName,
     email,
-    phoneNo,
+    phone: phoneNo,
+    phoneCountryCode: phoneCountryCode?.toLowerCase() || "us",
     password: hashedPassword,
     address,
     company: createCompany._id,

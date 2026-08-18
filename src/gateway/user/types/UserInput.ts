@@ -13,6 +13,7 @@ export const UserInput = new GraphQLInputObjectType({
     lastName: { type: GraphQLString },
     email: { type: GraphQLString },
     phone: { type: GraphQLString },
+    phoneCountryCode: { type: GraphQLString },
     password: { type: GraphQLString },
     role: { type: GraphQLString },
     company: {

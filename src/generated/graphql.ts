@@ -1322,6 +1322,7 @@ export type SignUpInputType = {
   firstName: Scalars['String']['input'];
   lastName: Scalars['String']['input'];
   password: Scalars['String']['input'];
+  phoneCountryCode?: InputMaybe<Scalars['String']['input']>;
   phoneNo: Scalars['String']['input'];
 };
 
@@ -1495,6 +1496,7 @@ export type UpdateUserInput = {
   location?: InputMaybe<Scalars['ID']['input']>;
   notificationPreference?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   phone?: InputMaybe<Scalars['String']['input']>;
+  phoneCountryCode?: InputMaybe<Scalars['String']['input']>;
   role?: InputMaybe<Scalars['String']['input']>;
   status?: InputMaybe<UpdateUserStatusInput>;
   workingRemote?: InputMaybe<Scalars['String']['input']>;
@@ -1535,6 +1537,7 @@ export type User = {
   location?: Maybe<OfficeLocation>;
   notificationPreference?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
   phone?: Maybe<Scalars['String']['output']>;
+  phoneCountryCode?: Maybe<Scalars['String']['output']>;
   role?: Maybe<RoleEnum>;
   timeline?: Maybe<EmployeeTimeline>;
   updatedAt?: Maybe<Scalars['Date']['output']>;
@@ -1552,6 +1555,7 @@ export type UserInput = {
   notificationPreference?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   password?: InputMaybe<Scalars['String']['input']>;
   phone?: InputMaybe<Scalars['String']['input']>;
+  phoneCountryCode?: InputMaybe<Scalars['String']['input']>;
   role?: InputMaybe<Scalars['String']['input']>;
   status?: InputMaybe<UserStatusInput>;
   workingRemote?: InputMaybe<Scalars['String']['input']>;

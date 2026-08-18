@@ -24,6 +24,12 @@ const UserSchema = new Schema(
     phone: {
       type: String,
     },
+    phoneCountryCode: {
+      type: String,
+      default: "us",
+      lowercase: true,
+      trim: true,
+    },
     password: {
       type: String,
       minlength: 6, // enforce minimum password length

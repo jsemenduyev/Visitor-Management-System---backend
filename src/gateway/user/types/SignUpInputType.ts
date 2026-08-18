@@ -16,6 +16,7 @@ export const SignUpInputType = new GraphQLInputObjectType({
     lastName: { type: new GraphQLNonNull(GraphQLString) },
     email: { type: new GraphQLNonNull(GraphQLString) },
     phoneNo: { type: new GraphQLNonNull(GraphQLString) },
+    phoneCountryCode: { type: GraphQLString },
     password: { type: new GraphQLNonNull(GraphQLString) },
     companyName: {
       type: GraphQLString,
