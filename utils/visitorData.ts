@@ -1,3 +1,5 @@
+import DeviceModel from "../database/models/devices";
+
 const FULL_NAME_KEYS = ["fullName", "Full Name", "FullName", "name"] as const;
 
 export const getDataObject = (data: any): Record<string, any> => {
@@ -35,4 +37,25 @@ export const normalizeVisitorData = (
     }
   }
   return normalized;
+};
+
+/** Device label for host emails — prefer saved kiosk name, then lookup by deviceId. */
+export const resolveDeviceLabel = async (visitor: {
+  deviceName?: string | null;
+  deviceId?: string | null;
+  signedInDevice?: string | null;
+}): Promise<string> => {
+  const savedName = visitor.deviceName?.trim();
+  if (savedName) return savedName;
+
+  const deviceId = visitor.deviceId?.trim();
+  if (deviceId) {
+    const device = await DeviceModel.findOne({ deviceId }).select("deviceName").lean();
+    if (device?.deviceName?.trim()) return device.deviceName.trim();
+  }
+
+  const signedInDevice = visitor.signedInDevice?.trim();
+  if (signedInDevice && signedInDevice !== "Mobile") return signedInDevice;
+
+  return "Front Desk";
 };

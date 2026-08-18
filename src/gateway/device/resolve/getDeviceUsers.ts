@@ -24,16 +24,14 @@ export default async (_: any, args: { sessionKey: string; search: string }) => {
       };
     }
 
-    let query: any = {
+    const query: any = {
       company: device.company,
       location: device.location,
       isArchived: { $ne: true },
+      $or: [{ createdBy: device.createdBy }, { _id: device.createdBy }],
     };
     if (search && search.trim() !== "") {
-      query = {
-        ...query,
-        firstName: { $regex: search, $options: "i" },
-      };
+      query.firstName = { $regex: search, $options: "i" };
     }
 
     const users = await UserModel.find(query).lean();

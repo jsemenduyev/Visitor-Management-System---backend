@@ -27,7 +27,12 @@ export default async (_: any, args: { sessionKey: string; search: string }) => {
         let query: any = {
             company: device.company,
             location: device.location,
+            _id: { $in: device.department ?? [] },
         };
+
+        if (!device.department?.length) {
+            return { department: [], count: 0 };
+        }
 
         if (search && search.trim() !== "") {
             query.name = { $regex: search, $options: "i" };
