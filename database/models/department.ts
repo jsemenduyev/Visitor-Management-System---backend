@@ -2,22 +2,31 @@ import { model, Schema } from "mongoose";
 
 const DepartmentSchema = new Schema(
   {
-    name: { type: String, unique: true },
+    name: {
+      type: String,
+      required: true,
+    },
     location: {
       type: Schema.Types.ObjectId,
       ref: "officelocations",
-      default:null
-    }, 
+      default: null,
+    },
     company: {
       type: Schema.Types.ObjectId,
       ref: "company",
       required: true,
     },
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
     user: [
       {
         type: Schema.Types.ObjectId,
         ref: "User",
-        default: null
+        default: null,
       },
     ],
     status: {
@@ -25,6 +34,11 @@ const DepartmentSchema = new Schema(
     },
   },
   { timestamps: true }
+);
+
+DepartmentSchema.index(
+  { company: 1, createdBy: 1, name: 1 },
+  { unique: true, name: "company_1_createdBy_1_name_1" }
 );
 
 const DepartmentModel = model("departments", DepartmentSchema);

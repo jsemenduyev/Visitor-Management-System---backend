@@ -19,6 +19,10 @@ export default async (_, args: QueryGetVistorsArgs, ctx) => {
 
     const { user } = ctx;
 
+    if (!user || !user.company) {
+      throw new Error("Unauthorized");
+    }
+
     const filter: any = {
       company: user.company,
     };

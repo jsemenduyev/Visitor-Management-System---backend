@@ -30,6 +30,7 @@ export default async (
     const department = await DepartmentModel.findOne({
       _id: departmentId,
       company,
+      createdBy: ctx.user._id,
     }).session(session);
 
     if (!department) {
