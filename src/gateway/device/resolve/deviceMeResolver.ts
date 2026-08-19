@@ -1,4 +1,5 @@
 import DeviceModel from "../../../../database/models/devices";
+import { locationForAdmin } from "../../utils/adminLocationSettings";
 
 export default async (_: any, args: { sessionKey: string }) => {
   try {
@@ -17,7 +18,10 @@ export default async (_: any, args: { sessionKey: string }) => {
       .populate("department")
       .populate("categoryType")
       .populate("company")
-      .populate("location")
+      .populate({
+        path: "location",
+        select: "+settingsByAdmin",
+      })
       .lean();
 
     if (!device) {
@@ -27,6 +31,13 @@ export default async (_: any, args: { sessionKey: string }) => {
           code: "UNAUTHORIZED",
         },
       };
+    }
+
+    if (device.location) {
+      const location = device.location as Record<string, any>;
+      const merged = locationForAdmin(location, location.createdBy);
+      delete merged.settingsByAdmin;
+      device.location = merged;
     }
 
     console.log("Visitor device:", {
