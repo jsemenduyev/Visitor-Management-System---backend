@@ -37,7 +37,7 @@ export default async (_: any, args: { sessionKey: string }) => {
       const location = device.location as Record<string, any>;
       const merged = locationForAdmin(location, location.createdBy);
       delete merged.settingsByAdmin;
-      device.location = merged;
+      device.location = merged as any;
     }
 
     console.log("Visitor device:", {
