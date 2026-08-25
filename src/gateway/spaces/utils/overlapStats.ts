@@ -30,8 +30,29 @@ export async function findOverlappingBookings(filter: {
   if (filter.createdBy) query.createdBy = filter.createdBy;
 
   return BookingSpaceModel.find(query)
-    .select("resource space start end people")
+    .select("resource space start end people employee")
+    .populate("employee", "firstName lastName")
+    .populate("space", "name")
     .lean();
+}
+
+export function bookingEmployeeName(booking: {
+  employee?: { firstName?: string | null; lastName?: string | null } | null;
+}) {
+  const first = booking?.employee?.firstName || "";
+  const last = booking?.employee?.lastName || "";
+  const name = `${first} ${last}`.trim();
+  return name || null;
+}
+
+export function bookingSpaceName(booking: {
+  space?: { name?: string | null; _id?: any } | null;
+}) {
+  if (!booking?.space) return null;
+  if (typeof booking.space === "object" && booking.space.name) {
+    return booking.space.name;
+  }
+  return null;
 }
 
 export function resourceBookedCount(
@@ -47,12 +68,41 @@ export function resourceBookedCount(
   }).length;
 }
 
+/** Direct resource bookings only (space bookings do not occupy resource units). */
+export function bookingsOccupyingResource(
+  bookings: Array<{
+    resource?: any;
+    space?: any;
+    start: any;
+    end: any;
+    people?: number | null;
+  }>,
+  resourceId: string,
+  _parentSpaceId?: string | null
+) {
+  return bookingsForResource(bookings, resourceId);
+}
+
+/** True when any overlapping pure space booking exists for this space. */
+export function hasOverlappingSpaceBooking(
+  bookings: Array<{ space?: any; resource?: any }>,
+  spaceId: string
+) {
+  return bookings.some((b) => {
+    if (b.resource) return false;
+    if (!b.space) return false;
+    const id = b.space._id ? b.space._id.toString() : b.space.toString();
+    return id === spaceId;
+  });
+}
+
 export function spaceBookedPeople(
-  bookings: Array<{ space?: any; people?: number | null }>,
+  bookings: Array<{ space?: any; resource?: any; people?: number | null }>,
   spaceId: string
 ) {
   return bookings
     .filter((b) => {
+      if (b.resource) return false;
       if (!b.space) return false;
       const id = b.space._id ? b.space._id.toString() : b.space.toString();
       return id === spaceId;
@@ -124,6 +174,7 @@ export function bookingsForResource(
 export function bookingsForSpace(
   bookings: Array<{
     space?: any;
+    resource?: any;
     start: any;
     end: any;
     people?: number | null;
@@ -131,6 +182,8 @@ export function bookingsForSpace(
   spaceId: string
 ) {
   return bookings.filter((b) => {
+    // Pure space bookings only — resource bookings are independent
+    if (b.resource) return false;
     if (!b.space) return false;
     const id = b.space._id ? b.space._id.toString() : b.space.toString();
     return id === spaceId;

@@ -1,5 +1,6 @@
 import SpaceResourceModel from "../../../../database/models/spacesResources";
 import { assertLocationBelongsToCompany } from "../utils/assertLocationCompany";
+import { resourceLinkedToSpaceFilter } from "../utils/syncSpaceResources";
 
 export default async (args: any, ctx: any) => {
   const { location, space, resourceCategory, features } = args;
@@ -16,7 +17,9 @@ export default async (args: any, ctx: any) => {
 
   const query: any = { location };
 
-  if (space) query.space = space;
+  if (space) {
+    Object.assign(query, resourceLinkedToSpaceFilter(space));
+  }
   if (resourceCategory) query.resourceCategory = resourceCategory;
   if (features && features.length > 0) query.features = { $in: features };
 
@@ -24,6 +27,7 @@ export default async (args: any, ctx: any) => {
     .populate("location")
     .populate("resourceCategory")
     .populate("space")
+    .populate("spaces")
     .lean();
   return resources;
 };

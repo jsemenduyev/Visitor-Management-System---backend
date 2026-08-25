@@ -5,7 +5,7 @@ import {
 import AddSpacesResolver from "./resolver/AddSpacesResolver";
 import { Spaces, SpacesInput, SpacesPayload } from "./types/Spaces";
 import GetSpacesResolver from "./resolver/GetSpacesResolver";
-import { GraphQLID, GraphQLList, GraphQLNonNull, GraphQLString } from "graphql";
+import { GraphQLID, GraphQLInt, GraphQLList, GraphQLNonNull, GraphQLString } from "graphql";
 import {
   SpacesCategory,
   SpacesCategoryInput,
@@ -109,6 +109,8 @@ export const spacesQuery = {
       startDate: { type: new GraphQLNonNull(GraphQLString) },
       endDate: { type: new GraphQLNonNull(GraphQLString) },
       space: { type: GraphQLID },
+      minCapacity: { type: GraphQLInt },
+      resourceIds: { type: new GraphQLList(GraphQLID) },
     },
     resolve: (_, args, ctx) =>
       isAUthenticated(args, ctx, GetSpaceScheduleResolver),

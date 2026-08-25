@@ -1,15 +1,22 @@
 import SpaceResourceModel from "../../../../database/models/spacesResources";
 import { assertLocationBelongsToCompany } from "../utils/assertLocationCompany";
 import {
+  bookingEmployeeName,
+  bookingSpaceName,
+  bookingsForResource,
   findOverlappingBookings,
-  resourceBookedCount,
+  maxConcurrentUnits,
 } from "../utils/overlapStats";
 
 export default async (args: any, ctx: any) => {
   const { location, start, end, resourceCategory } = args;
   const company = ctx?.user?.company;
 
-  const ownedLocation = await assertLocationBelongsToCompany(location, company, ctx.user._id);
+  const ownedLocation = await assertLocationBelongsToCompany(
+    location,
+    company,
+    ctx.user._id
+  );
   if (!ownedLocation) {
     return [];
   }
@@ -30,9 +37,12 @@ export default async (args: any, ctx: any) => {
   });
 
   return resources.map((resource: any) => {
-    const capacity = typeof resource.capacity === "number" ? resource.capacity : 0;
-    const booked = resourceBookedCount(bookings, resource._id.toString());
+    const capacity =
+      typeof resource.capacity === "number" ? resource.capacity : 0;
+    const occupying = bookingsForResource(bookings, resource._id.toString());
+    const booked = maxConcurrentUnits(occupying);
     const available = Math.max(0, capacity - booked);
+
     return {
       _id: resource._id,
       resourceName: resource.name,
@@ -44,19 +54,16 @@ export default async (args: any, ctx: any) => {
       capacity,
       booked,
       available,
-      bookings: bookings
-        .filter((b: any) => {
-          if (!b.resource) return false;
-          const id = b.resource._id
-            ? b.resource._id.toString()
-            : b.resource.toString();
-          return id === resource._id.toString();
-        })
-        .map((b: any) => ({
-          start: b.start,
-          end: b.end,
-          people: b.people ?? 1,
-        })),
+      bookings: occupying.map((b: any) => ({
+        start: b.start,
+        end: b.end,
+        people: b.people ?? 1,
+        employeeName: bookingEmployeeName(b),
+        spaceName:
+          bookingSpaceName(b) ||
+          resource.space?.name ||
+          null,
+      })),
     };
   });
 };

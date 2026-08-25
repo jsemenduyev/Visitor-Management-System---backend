@@ -1,5 +1,6 @@
 import SpaceModel from "../../../../database/models/spaces";
 import { assertLocationBelongsToCompany } from "../utils/assertLocationCompany";
+import { syncSpaceResources } from "../utils/syncSpaceResources";
 
 export default async (args: any, ctx: any) => {
   const { _id, input } = args;
@@ -31,7 +32,6 @@ export default async (args: any, ctx: any) => {
     };
   }
 
-  // If relocating, new location must also belong to caller's company
   if (input?.location) {
     const ownedNew = await assertLocationBelongsToCompany(
       input.location,
@@ -64,7 +64,31 @@ export default async (args: any, ctx: any) => {
     };
   }
 
-  const space = await SpaceModel.findByIdAndUpdate(_id, input, { new: true });
+  const { resources, ...spaceFields } = input ?? {};
+  const space = await SpaceModel.findByIdAndUpdate(_id, spaceFields, {
+    new: true,
+  });
+
+  if (resources !== undefined) {
+    const location =
+      input?.location?.toString?.() ??
+      existing.location?.toString?.() ??
+      existing.location;
+    const syncResult = await syncSpaceResources(
+      _id,
+      resources,
+      String(location)
+    );
+    if (syncResult.ok === false) {
+      return {
+        spaces: null,
+        error: {
+          message: syncResult.message,
+          code: syncResult.code,
+        },
+      };
+    }
+  }
 
   return {
     spaces: space,

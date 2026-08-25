@@ -1,5 +1,6 @@
 import SpaceModel from "../../../../database/models/spaces";
 import { assertLocationBelongsToCompany } from "../utils/assertLocationCompany";
+import { syncSpaceResources } from "../utils/syncSpaceResources";
 
 export default async (args: any, ctx: any) => {
   const { input } = args;
@@ -48,7 +49,26 @@ export default async (args: any, ctx: any) => {
     };
   }
 
-  const space = await SpaceModel.create(input);
+  const { resources, ...spaceFields } = input;
+  const space = await SpaceModel.create(spaceFields);
+
+  if (resources && resources.length > 0) {
+    const syncResult = await syncSpaceResources(
+      space._id.toString(),
+      resources,
+      input.location
+    );
+    if (syncResult.ok === false) {
+      return {
+        spaces: null,
+        error: {
+          message: syncResult.message,
+          code: syncResult.code,
+        },
+      };
+    }
+  }
+
   return {
     spaces: space,
     error: null,

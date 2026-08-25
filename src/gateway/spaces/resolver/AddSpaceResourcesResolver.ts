@@ -64,7 +64,14 @@ export default async (args: any, ctx: any) => {
     };
   }
 
-  const createResource = await SpaceResourceModel.create(input);
+  const createPayload: any = {
+    ...input,
+  };
+  if (input?.space) {
+    createPayload.spaces = [input.space];
+  }
+
+  const createResource = await SpaceResourceModel.create(createPayload);
   return {
     resource: createResource,
   };

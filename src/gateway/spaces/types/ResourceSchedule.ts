@@ -7,6 +7,7 @@ import {
 } from "graphql";
 import { GraphQLDateTime } from "graphql-scalars";
 import { Spaces } from "./Spaces";
+import { SpacesResource } from "./SpacesResource";
 
 export const SimpleBookingTimeType = new GraphQLObjectType({
   name: "SimpleBookingTime",
@@ -14,6 +15,8 @@ export const SimpleBookingTimeType = new GraphQLObjectType({
     start: { type: GraphQLDateTime },
     end: { type: GraphQLDateTime },
     people: { type: GraphQLInt },
+    employeeName: { type: GraphQLString },
+    spaceName: { type: GraphQLString },
   }),
 });
 
@@ -41,5 +44,6 @@ export const SpaceScheduleType = new GraphQLObjectType({
     bookedPeople: { type: GraphQLInt },
     availablePeople: { type: GraphQLInt },
     bookings: { type: new GraphQLList(SimpleBookingTimeType) },
+    resources: { type: new GraphQLList(SpacesResource) },
   }),
 });

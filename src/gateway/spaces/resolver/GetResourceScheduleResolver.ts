@@ -1,27 +1,37 @@
 import SpaceResourceModel from "../../../../database/models/spacesResources";
 import { assertLocationBelongsToCompany } from "../utils/assertLocationCompany";
 import {
+  bookingEmployeeName,
+  bookingSpaceName,
   bookingsForResource,
   findOverlappingBookings,
   maxConcurrentUnits,
 } from "../utils/overlapStats";
+import { resourceLinkedToSpaceFilter } from "../utils/syncSpaceResources";
 
 export default async (args: any, ctx: any) => {
   const { location, startDate, endDate, space, resourceCategory } = args;
   const company = ctx?.user?.company;
 
-  const ownedLocation = await assertLocationBelongsToCompany(location, company, ctx.user._id);
+  const ownedLocation = await assertLocationBelongsToCompany(
+    location,
+    company,
+    ctx.user._id
+  );
   if (!ownedLocation) {
     return [];
   }
 
   const query: any = { location };
-  if (space) query.space = space;
+  if (space) {
+    Object.assign(query, resourceLinkedToSpaceFilter(space));
+  }
   if (resourceCategory) query.resourceCategory = resourceCategory;
 
   const resources = await SpaceResourceModel.find(query)
     .populate("resourceCategory", "name")
     .populate("space")
+    .populate("spaces")
     .lean();
 
   const start = new Date(startDate);
@@ -39,11 +49,8 @@ export default async (args: any, ctx: any) => {
   return resources.map((resource: any) => {
     const capacity =
       typeof resource.capacity === "number" ? resource.capacity : 0;
-    const resourceBookings = bookingsForResource(
-      bookings,
-      resource._id.toString()
-    );
-    const booked = maxConcurrentUnits(resourceBookings);
+    const occupying = bookingsForResource(bookings, resource._id.toString());
+    const booked = maxConcurrentUnits(occupying);
     const available = Math.max(0, capacity - booked);
 
     return {
@@ -53,14 +60,20 @@ export default async (args: any, ctx: any) => {
       categoryName: resource.resourceCategory
         ? resource.resourceCategory.name
         : null,
-      space: resource.space ?? null,
+      space: resource.space ?? resource.spaces?.[0] ?? null,
       capacity,
       booked,
       available,
-      bookings: resourceBookings.map((b: any) => ({
+      bookings: occupying.map((b: any) => ({
         start: b.start,
         end: b.end,
         people: b.people ?? 1,
+        employeeName: bookingEmployeeName(b),
+        spaceName:
+          bookingSpaceName(b) ||
+          resource.space?.name ||
+          resource.spaces?.[0]?.name ||
+          null,
       })),
     };
   });

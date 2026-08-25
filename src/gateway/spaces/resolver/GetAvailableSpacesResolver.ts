@@ -2,6 +2,9 @@ import SpaceModel from "../../../../database/models/spaces";
 import SpaceResourceModel from "../../../../database/models/spacesResources";
 import { assertLocationBelongsToCompany } from "../utils/assertLocationCompany";
 import {
+  bookingEmployeeName,
+  bookingSpaceName,
+  bookingsForSpace,
   findOverlappingBookings,
   spaceBookedPeople,
 } from "../utils/overlapStats";
@@ -15,18 +18,25 @@ export default async (args: any, ctx: any) => {
     return [];
   }
 
+  // Resource filter only narrows which spaces are listed (by assignment),
+  // not by whether that resource is currently booked.
   let spaceIds: string[] | null = null;
   if (resource) {
     const resDoc = await SpaceResourceModel.findOne({
       _id: resource,
       location,
     })
-      .select("space")
+      .select("space spaces")
       .lean();
-    if (!resDoc?.space) {
+    const linked: string[] = [];
+    if (resDoc?.space) linked.push(resDoc.space.toString());
+    for (const s of (resDoc as any)?.spaces ?? []) {
+      linked.push(s.toString());
+    }
+    if (linked.length === 0) {
       return [];
     }
-    spaceIds = [resDoc.space.toString()];
+    spaceIds = Array.from(new Set(linked));
   }
 
   const spaceQuery: any = { location };
@@ -47,27 +57,28 @@ export default async (args: any, ctx: any) => {
     const capacitySet =
       typeof space.capacity === "number" && Number.isFinite(space.capacity);
     const capacity = capacitySet ? space.capacity : null;
+    const spaceBookings = bookingsForSpace(bookings, space._id.toString());
     const bookedPeople = spaceBookedPeople(bookings, space._id.toString());
-    const availablePeople = capacitySet
-      ? Math.max(0, (capacity as number) - bookedPeople)
-      : null;
+    const overlappingCount = spaceBookings.length;
+    const availablePeople =
+      overlappingCount > 0
+        ? 0
+        : capacitySet
+          ? (capacity as number)
+          : null;
     return {
       _id: space._id,
       name: space.name,
       capacity,
       bookedPeople,
       availablePeople,
-      bookings: bookings
-        .filter((b: any) => {
-          if (!b.space) return false;
-          const id = b.space._id ? b.space._id.toString() : b.space.toString();
-          return id === space._id.toString();
-        })
-        .map((b: any) => ({
-          start: b.start,
-          end: b.end,
-          people: b.people ?? 1,
-        })),
+      bookings: spaceBookings.map((b: any) => ({
+        start: b.start,
+        end: b.end,
+        people: b.people ?? 1,
+        employeeName: bookingEmployeeName(b),
+        spaceName: bookingSpaceName(b) || space.name || null,
+      })),
     };
   });
 };

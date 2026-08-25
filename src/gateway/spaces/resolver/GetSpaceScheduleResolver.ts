@@ -1,22 +1,37 @@
 import SpaceModel from "../../../../database/models/spaces";
+import SpaceResourceModel from "../../../../database/models/spacesResources";
 import { assertLocationBelongsToCompany } from "../utils/assertLocationCompany";
 import {
+  bookingEmployeeName,
+  bookingSpaceName,
   bookingsForSpace,
   findOverlappingBookings,
   maxConcurrentPeople,
 } from "../utils/overlapStats";
 
 export default async (args: any, ctx: any) => {
-  const { location, startDate, endDate, space } = args;
+  const { location, startDate, endDate, space, minCapacity, resourceIds } =
+    args;
   const company = ctx?.user?.company;
 
-  const ownedLocation = await assertLocationBelongsToCompany(location, company, ctx.user._id);
+  const ownedLocation = await assertLocationBelongsToCompany(
+    location,
+    company,
+    ctx.user._id
+  );
   if (!ownedLocation) {
     return [];
   }
 
   const query: any = { location };
   if (space) query._id = space;
+  if (
+    typeof minCapacity === "number" &&
+    Number.isFinite(minCapacity) &&
+    minCapacity > 0
+  ) {
+    query.capacity = { $gte: minCapacity };
+  }
 
   const spaces = await SpaceModel.find(query).lean();
 
@@ -32,13 +47,46 @@ export default async (args: any, ctx: any) => {
     createdBy: ctx.user._id,
   });
 
-  return spaces.map((s: any) => {
+  const spaceIds = spaces.map((s: any) => s._id);
+  const allResources = await SpaceResourceModel.find({
+    location,
+    $or: [
+      { spaces: { $in: spaceIds } },
+      { space: { $in: spaceIds } },
+    ],
+  })
+    .populate("resourceCategory")
+    .lean();
+
+  const resourcesBySpace = new Map<string, any[]>();
+  for (const resource of allResources) {
+    const linked = new Set<string>();
+    if (resource.space) {
+      linked.add(
+        resource.space._id?.toString?.() ?? String(resource.space),
+      );
+    }
+    for (const s of resource.spaces ?? []) {
+      linked.add(s?._id?.toString?.() ?? String(s));
+    }
+    for (const spaceKey of linked) {
+      if (!resourcesBySpace.has(spaceKey)) {
+        resourcesBySpace.set(spaceKey, []);
+      }
+      resourcesBySpace.get(spaceKey)!.push(resource);
+    }
+  }
+
+  const requiredResourceIds = (resourceIds ?? [])
+    .filter(Boolean)
+    .map((id: any) => String(id));
+
+  const mapped = spaces.map((s: any) => {
     const capacitySet =
       typeof s.capacity === "number" && Number.isFinite(s.capacity);
     const capacity = capacitySet ? s.capacity : null;
     const spaceBookings = bookingsForSpace(bookings, s._id.toString());
     const bookedPeople = maxConcurrentPeople(spaceBookings);
-    // Missing capacity = unset (legacy); do not treat as fully booked
     const availablePeople = capacitySet
       ? Math.max(0, (capacity as number) - bookedPeople)
       : null;
@@ -52,7 +100,23 @@ export default async (args: any, ctx: any) => {
         start: b.start,
         end: b.end,
         people: b.people ?? 1,
+        employeeName: bookingEmployeeName(b),
+        spaceName: bookingSpaceName(b) || s.name || null,
       })),
+      resources: resourcesBySpace.get(s._id.toString()) ?? [],
     };
+  });
+
+  if (requiredResourceIds.length === 0) {
+    return mapped;
+  }
+
+  return mapped.filter((s: any) => {
+    const spaceResourceIds = (s.resources ?? []).map((r: any) =>
+      String(r?._id),
+    );
+    return requiredResourceIds.every((id: string) =>
+      spaceResourceIds.includes(id),
+    );
   });
 };

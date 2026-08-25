@@ -5,8 +5,10 @@ import { UserModel } from "../../../../database/models/user";
 import { assertLocationBelongsToCompany } from "../utils/assertLocationCompany";
 import {
   findOverlappingBookings,
-  resourceBookedCount,
+  maxConcurrentUnits,
+  bookingsForResource,
   spaceBookedPeople,
+  bookingsForSpace,
 } from "../utils/overlapStats";
 
 export default async (args: any, ctx: any) => {
@@ -79,7 +81,6 @@ export default async (args: any, ctx: any) => {
     resource = await SpaceResourceModel.findOne({
       _id: input.resource,
       location: input.location,
-      createdBy: ctx.user._id,
     }).lean();
     if (!resource) {
       return {
@@ -97,7 +98,6 @@ export default async (args: any, ctx: any) => {
     space = await SpaceModel.findOne({
       _id: input.space,
       location: input.location,
-      createdBy: ctx.user._id,
     }).lean();
     if (!space) {
       return {
@@ -110,19 +110,25 @@ export default async (args: any, ctx: any) => {
     }
   }
 
-  // When both selected, resource must belong to that space if linked
-  if (
-    resource?.space &&
-    space &&
-    resource.space.toString() !== input.space.toString()
-  ) {
-    return {
-      booking: null,
-      error: {
-        message: "Resource does not belong to the selected space",
-        code: "VALIDATION",
-      },
-    };
+  // Pure space booking may also pick a linked resource; require it belongs to the space
+  if (hasSpace && !hasResource && resource && space) {
+    const linkedIds = new Set<string>();
+    if (resource.space) linkedIds.add(resource.space.toString());
+    for (const s of resource.spaces ?? []) {
+      linkedIds.add(s.toString());
+    }
+    if (
+      linkedIds.size > 0 &&
+      !linkedIds.has(input.space.toString())
+    ) {
+      return {
+        booking: null,
+        error: {
+          message: "Resource does not belong to the selected space",
+          code: "VALIDATION",
+        },
+      };
+    }
   }
 
   const overlapping = await findOverlappingBookings({
@@ -137,10 +143,11 @@ export default async (args: any, ctx: any) => {
       typeof resource.capacity === "number" && Number.isFinite(resource.capacity)
         ? resource.capacity
         : null;
-    const resourceBooked = resourceBookedCount(
+    const occupying = bookingsForResource(
       overlapping,
       resource._id.toString()
     );
+    const resourceBooked = maxConcurrentUnits(occupying);
     if (resourceCapacity != null && resourceBooked + 1 > resourceCapacity) {
       return {
         booking: null,
@@ -153,12 +160,26 @@ export default async (args: any, ctx: any) => {
     }
   }
 
-  if (space) {
+  // Space availability only for pure space bookings (not resource bookings with a Place)
+  if (space && !hasResource) {
+    const overlappingForSpace = bookingsForSpace(
+      overlapping,
+      space._id.toString()
+    );
     const spaceCapacity =
       typeof space.capacity === "number" && Number.isFinite(space.capacity)
         ? space.capacity
         : null;
     const spaceBooked = spaceBookedPeople(overlapping, space._id.toString());
+    if (overlappingForSpace.length > 0) {
+      return {
+        booking: null,
+        error: {
+          message: "Space is not available for the selected date and time",
+          code: "UNAVAILABLE",
+        },
+      };
+    }
     if (spaceCapacity != null && spaceBooked + people > spaceCapacity) {
       return {
         booking: null,
@@ -176,6 +197,7 @@ export default async (args: any, ctx: any) => {
   const booking = await BookingSpaceModel.create({
     ...input,
     people: people >= 1 ? people : 1,
+    // Space bookings never store a resource. Resource bookings may store Place (space).
     resource: hasResource ? input.resource : undefined,
     space: hasSpace ? input.space : undefined,
     createdBy: ctx.user._id,

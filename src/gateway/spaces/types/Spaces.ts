@@ -54,6 +54,9 @@ export const SpacesInput = new GraphQLInputObjectType({
     resource: {
       type: GraphQLString,
     },
+    resources: {
+      type: new GraphQLList(GraphQLID),
+    },
     location: {
       type: GraphQLID,
     },

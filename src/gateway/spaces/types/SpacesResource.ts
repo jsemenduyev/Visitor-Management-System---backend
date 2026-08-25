@@ -29,9 +29,28 @@ export const SpacesResource = new GraphQLObjectType({
     },
     space: {
       type: Spaces,
+      resolve: (parent: any) => {
+        if (parent?.space) return parent.space;
+        const list = parent?.spaces;
+        if (Array.isArray(list) && list.length > 0) return list[0];
+        return null;
+      },
+    },
+    spaces: {
+      type: new GraphQLList(Spaces),
+      resolve: (parent: any) => {
+        if (Array.isArray(parent?.spaces) && parent.spaces.length > 0) {
+          return parent.spaces;
+        }
+        if (parent?.space) return [parent.space];
+        return [];
+      },
     },
     capacity: {
       type: GraphQLInt,
+    },
+    icon: {
+      type: GraphQLString,
     },
     features: {
       type: new GraphQLList(GraphQLString),
@@ -77,6 +96,9 @@ export const SpacesResourceInput = new GraphQLInputObjectType({
     },
     capacity: {
       type: GraphQLInt,
+    },
+    icon: {
+      type: GraphQLString,
     },
     features: {
       type: new GraphQLList(GraphQLString),
