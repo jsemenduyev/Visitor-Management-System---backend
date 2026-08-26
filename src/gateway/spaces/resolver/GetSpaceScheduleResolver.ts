@@ -97,10 +97,13 @@ export default async (args: any, ctx: any) => {
       bookedPeople,
       availablePeople,
       bookings: spaceBookings.map((b: any) => ({
+        _id: b._id,
         start: b.start,
         end: b.end,
         people: b.people ?? 1,
+        employeeId: b.employee?._id ?? b.employee ?? null,
         employeeName: bookingEmployeeName(b),
+        spaceId: b.space?._id ?? b.space ?? s._id ?? null,
         spaceName: bookingSpaceName(b) || s.name || null,
       })),
       resources: resourcesBySpace.get(s._id.toString()) ?? [],

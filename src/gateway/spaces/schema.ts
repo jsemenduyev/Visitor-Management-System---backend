@@ -30,6 +30,8 @@ import {
 } from "./types/BookingSpace";
 import GetBookingSpacesResolver from "./resolver/GetBookingSpacesResolver";
 import AddBookingSpaceResolver from "./resolver/AddBookingSpaceResolver";
+import UpdateBookingSpaceResolver from "./resolver/UpdateBookingSpaceResolver";
+import DeleteBookingSpaceResolver from "./resolver/DeleteBookingSpaceResolver";
 import {
   ResourceScheduleType,
   SpaceScheduleType,
@@ -212,5 +214,22 @@ export const spacesMutation = {
     },
     resolve: (_, args, ctx) =>
       isAUthenticated(args, ctx, AddBookingSpaceResolver),
+  },
+  updateBookingSpace: {
+    type: BookingSpacePayload,
+    args: {
+      id: { type: GraphQLID },
+      input: { type: BookingSpaceInput },
+    },
+    resolve: (_, args, ctx) =>
+      isAUthenticated(args, ctx, UpdateBookingSpaceResolver),
+  },
+  deleteBookingSpace: {
+    type: BookingSpacePayload,
+    args: {
+      id: { type: GraphQLID },
+    },
+    resolve: (_, args, ctx) =>
+      isAUthenticated(args, ctx, DeleteBookingSpaceResolver),
   },
 };

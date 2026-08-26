@@ -65,10 +65,13 @@ export default async (args: any, ctx: any) => {
       booked,
       available,
       bookings: occupying.map((b: any) => ({
+        _id: b._id,
         start: b.start,
         end: b.end,
         people: b.people ?? 1,
+        employeeId: b.employee?._id ?? b.employee ?? null,
         employeeName: bookingEmployeeName(b),
+        spaceId: b.space?._id ?? b.space ?? null,
         spaceName:
           bookingSpaceName(b) ||
           resource.space?.name ||

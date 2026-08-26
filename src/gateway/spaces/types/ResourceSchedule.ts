@@ -12,10 +12,13 @@ import { SpacesResource } from "./SpacesResource";
 export const SimpleBookingTimeType = new GraphQLObjectType({
   name: "SimpleBookingTime",
   fields: () => ({
+    _id: { type: GraphQLID },
     start: { type: GraphQLDateTime },
     end: { type: GraphQLDateTime },
     people: { type: GraphQLInt },
+    employeeId: { type: GraphQLID },
     employeeName: { type: GraphQLString },
+    spaceId: { type: GraphQLID },
     spaceName: { type: GraphQLString },
   }),
 });
