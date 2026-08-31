@@ -21,6 +21,7 @@ interface IVisitorCategory extends Document {
   enabled: boolean;
   approval: boolean;
   host: boolean;
+  allowBadgePrint: boolean;
   company: any;
   location: any;
   fields: Types.DocumentArray<IField & Document>;
@@ -73,6 +74,10 @@ const VisitorCategorySchema = new mongoose.Schema<IVisitorCategory>(
     host: {
       type: Boolean,
       default: true,
+    },
+    allowBadgePrint: {
+      type: Boolean,
+      default: false,
     },
     company: {
       type: Schema.Types.ObjectId,

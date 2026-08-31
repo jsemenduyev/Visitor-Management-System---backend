@@ -36,6 +36,9 @@ export const CategoryInput = new GraphQLInputObjectType({
     host: {
       type: GraphQLBoolean,
     },
+    allowBadgePrint: {
+      type: GraphQLBoolean,
+    },
     company: {
       type: GraphQLID,
     },

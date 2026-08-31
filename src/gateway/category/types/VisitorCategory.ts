@@ -50,6 +50,7 @@ export const VisitorCategoryType = new GraphQLObjectType({
     approval: { type: GraphQLBoolean },
     enabled: { type: GraphQLBoolean },
     host: { type: GraphQLBoolean },
+    allowBadgePrint: { type: GraphQLBoolean },
     priority: { type: GraphQLInt },
     fields: { type: new GraphQLList(FieldType) },
   }),

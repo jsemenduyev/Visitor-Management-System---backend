@@ -134,6 +134,7 @@ export type BrandingTypeInput = {
 };
 
 export type CategoryInput = {
+  allowBadgePrint?: InputMaybe<Scalars['Boolean']['input']>;
   approval?: InputMaybe<Scalars['Boolean']['input']>;
   company?: InputMaybe<Scalars['ID']['input']>;
   fields?: InputMaybe<Array<InputMaybe<FieldInput>>>;
@@ -1525,6 +1526,7 @@ export type TabImgInput = {
 
 export type UpdateCategoryInput = {
   _id?: InputMaybe<Scalars['String']['input']>;
+  allowBadgePrint?: InputMaybe<Scalars['Boolean']['input']>;
   approval?: InputMaybe<Scalars['Boolean']['input']>;
   company?: InputMaybe<Scalars['String']['input']>;
   enabled?: InputMaybe<Scalars['Boolean']['input']>;
@@ -1732,6 +1734,7 @@ export type VisitorButtonInput = {
 
 export type VisitorCategory = {
   __typename?: 'VisitorCategory';
+  allowBadgePrint?: Maybe<Scalars['Boolean']['output']>;
   approval?: Maybe<Scalars['Boolean']['output']>;
   enabled?: Maybe<Scalars['Boolean']['output']>;
   fields?: Maybe<Array<Maybe<Field>>>;
@@ -1935,6 +1938,8 @@ export type ResolversTypes = {
   EvacuationPerson: ResolverTypeWrapper<EvacuationPerson>;
   Field: ResolverTypeWrapper<Field>;
   FieldInput: FieldInput;
+  FieldOption: ResolverTypeWrapper<FieldOption>;
+  FieldOptionInput: FieldOptionInput;
   GeneralDeliveryContact: GeneralDeliveryContact;
   GeneralDeliveryContactType: ResolverTypeWrapper<GeneralDeliveryContactType>;
   GeneralDeliveryInput: GeneralDeliveryInput;
@@ -2086,6 +2091,8 @@ export type ResolversParentTypes = {
   EvacuationPerson: EvacuationPerson;
   Field: Field;
   FieldInput: FieldInput;
+  FieldOption: FieldOption;
+  FieldOptionInput: FieldOptionInput;
   GeneralDeliveryContact: GeneralDeliveryContact;
   GeneralDeliveryContactType: GeneralDeliveryContactType;
   GeneralDeliveryInput: GeneralDeliveryInput;
@@ -2426,9 +2433,16 @@ export type FieldResolvers<ContextType = any, ParentType extends ResolversParent
   id?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   label?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   name?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  options?: Resolver<Maybe<Array<Maybe<ResolversTypes['FieldOption']>>>, ParentType, ContextType>;
   priority?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
   required?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   type?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type FieldOptionResolvers<ContextType = any, ParentType extends ResolversParentTypes['FieldOption'] = ResolversParentTypes['FieldOption']> = {
+  label?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  value?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -2904,6 +2918,7 @@ export type VisitorButtonResolvers<ContextType = any, ParentType extends Resolve
 };
 
 export type VisitorCategoryResolvers<ContextType = any, ParentType extends ResolversParentTypes['VisitorCategory'] = ResolversParentTypes['VisitorCategory']> = {
+  allowBadgePrint?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   approval?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   enabled?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   fields?: Resolver<Maybe<Array<Maybe<ResolversTypes['Field']>>>, ParentType, ContextType>;
@@ -2975,6 +2990,7 @@ export type Resolvers<ContextType = any> = {
   EvacuationList?: EvacuationListResolvers<ContextType>;
   EvacuationPerson?: EvacuationPersonResolvers<ContextType>;
   Field?: FieldResolvers<ContextType>;
+  FieldOption?: FieldOptionResolvers<ContextType>;
   GeneralDeliveryContactType?: GeneralDeliveryContactTypeResolvers<ContextType>;
   GeneralDeliveryInstType?: GeneralDeliveryInstTypeResolvers<ContextType>;
   GeneralDeliveryType?: GeneralDeliveryTypeResolvers<ContextType>;

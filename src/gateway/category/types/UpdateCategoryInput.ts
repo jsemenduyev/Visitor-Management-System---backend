@@ -41,6 +41,7 @@ export const UpdateCategoryInput = new GraphQLInputObjectType({
     enabled: { type: GraphQLBoolean },
     host: { type: GraphQLBoolean },
     approval: { type: GraphQLBoolean },
+    allowBadgePrint: { type: GraphQLBoolean },
     priority: { type: GraphQLInt },
     fields: { type: new GraphQLList(UpdateFieldInput) },
   }),
