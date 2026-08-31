@@ -9,6 +9,8 @@ import {
 import { MutationCreateUserArgs } from "../../../generated/graphql";
 import { createHeadOfficeForAdmin } from "../../utils/locationOwnerScope";
 import { phonesAreDuplicate } from "../../../../utils/phoneValidation";
+import { sendTwilioMessage } from "../../../services/sendMessage";
+import { getUserNotificationPhones } from "../../../../utils/userNotificationContacts";
 
 const generateTempPassword = () =>
   crypto.randomBytes(5).toString("base64url").slice(0, 10);
@@ -143,6 +145,18 @@ export default async (args: MutationCreateUserArgs, ctx: any) => {
           code: "EMAIL_SEND_FAILED",
         },
       };
+    }
+
+    try {
+      const phones = getUserNotificationPhones(createdEmployee);
+      if (phones.length > 0) {
+        const smsMessage = `Hello ${fullName}, welcome to Maximal Security! Your employee profile has been successfully created.`;
+        await Promise.allSettled(
+          phones.map((phone) => sendTwilioMessage(phone, smsMessage)),
+        );
+      }
+    } catch (smsError) {
+      console.error("Failed to send employee welcome SMS:", smsError);
     }
 
     return {
