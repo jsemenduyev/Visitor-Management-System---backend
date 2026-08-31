@@ -43,7 +43,7 @@ export default async (args: MutationCreateDepartmentArgs, ctx) => {
       const updatedDepartment = await DepartmentModel.findOneAndUpdate(
         { _id: input._id, company, createdBy },
         scopedInput,
-        { new: true }
+        { new: true },
       );
 
       if (!updatedDepartment) {

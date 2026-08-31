@@ -110,6 +110,8 @@ const init = async (): Promise<void> => {
   console.log(
     `Verify link base URL (FRONTEND_URL): ${process.env.FRONTEND_URL || process.env.CLIENT_URL || "http://localhost:3000"}`,
   );
+  const { getContactLessBaseUrl } = await import("./src/utils/contactLessQr");
+  console.log(`Contactless / QR base URL: ${getContactLessBaseUrl() || "(not configured)"}`);
 
   app.get("/", (_req: Request, res: Response) => {
     res.status(200).send("Hello from TypeScript Express backend 🚀");

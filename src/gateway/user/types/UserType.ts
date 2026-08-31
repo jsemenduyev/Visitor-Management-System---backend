@@ -35,9 +35,12 @@ export const UserType = new GraphQLObjectType({
     firstName: { type: GraphQLString },
     lastName: { type: GraphQLString },
     email: { type: GraphQLString },
+    email2: { type: GraphQLString },
     role: { type: RoleEnum },
     phone: { type: GraphQLString },
     phoneCountryCode: { type: GraphQLString },
+    phone2: { type: GraphQLString },
+    phoneCountryCode2: { type: GraphQLString },
     company: { type: CompanyType },
     location: {
       type: OfficeLocation,

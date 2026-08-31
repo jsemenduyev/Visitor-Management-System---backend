@@ -9,20 +9,91 @@ import DepartmentModel from "../../database/models/department";
 import { sendVisitorArrivalEmail } from "../../utils/VisitorEmail";
 import { sendVisitorApprovalEmail } from "../../utils/approvalEmail";
 import {
+  getUserNotificationEmails,
+  getUserNotificationPhones,
+} from "../../utils/userNotificationContacts";
+import {
   normalizeVisitorData,
   resolveVisitorFullName,
 } from "../../utils/visitorData";
 import { sendTwilioMessage } from "./sendMessage";
+import { locationForAdmin } from "../gateway/utils/adminLocationSettings";
 import { Types } from "mongoose";
 
 const visitUsRouter = express.Router();
 
-const findLocationByToken = async (token: unknown) => {
+const iterSettingsByAdmin = (
+  settingsByAdmin: unknown,
+): Array<[string, Record<string, any>]> => {
+  if (!settingsByAdmin || typeof settingsByAdmin !== "object") return [];
+  if (settingsByAdmin instanceof Map) {
+    return [...settingsByAdmin.entries()];
+  }
+  return Object.entries(settingsByAdmin as Record<string, Record<string, any>>);
+};
+
+type TokenLocationContext = {
+  location: Record<string, any>;
+  ownerId: string;
+};
+
+const findLocationByToken = async (
+  token: unknown,
+): Promise<TokenLocationContext | null> => {
   if (!token || typeof token !== "string") return null;
-  return OfficeLocationModel.findOne({
+
+  const topLevel = await OfficeLocationModel.findOne({
     "contactLess.token": token,
     "contactLess.enabled": true,
-  }).lean();
+  })
+    .select("+settingsByAdmin")
+    .lean();
+
+  if (topLevel) {
+    return {
+      location: locationForAdmin(topLevel as any, topLevel.createdBy),
+      ownerId: String(topLevel.createdBy),
+    };
+  }
+
+  const candidates = await OfficeLocationModel.find({
+    settingsByAdmin: { $exists: true, $ne: {} },
+  })
+    .select("+settingsByAdmin")
+    .lean();
+
+  for (const location of candidates) {
+    for (const [adminId, adminSettings] of iterSettingsByAdmin(
+      location.settingsByAdmin,
+    )) {
+      const contactLess = adminSettings?.contactLess;
+      if (contactLess?.token === token && contactLess?.enabled) {
+        return {
+          location: locationForAdmin(location as any, adminId),
+          ownerId: adminId,
+        };
+      }
+    }
+  }
+
+  return null;
+};
+
+const buildDepartmentFilter = (
+  ctx: TokenLocationContext,
+  searchStr: string,
+): Record<string, any> => {
+  const filter: Record<string, any> = {
+    company: ctx.location.company,
+    location: ctx.location._id,
+    createdBy: ctx.ownerId,
+  };
+
+  if (searchStr) {
+    filter.name = { $regex: searchStr, $options: "i" };
+  }
+
+  return filter;
 };
 
 visitUsRouter.get("/verifyToken", async (req, res) => {
@@ -33,9 +104,10 @@ visitUsRouter.get("/verifyToken", async (req, res) => {
       return res.status(400).json({ message: "Token is required" });
     }
 
-    const location = await findLocationByToken(token);
+    const ctx = await findLocationByToken(token);
+    const location = ctx?.location;
 
-    if (!location) {
+    if (!ctx || !location) {
       return res.status(401).json({ message: "Invalid token" });
     }
 
@@ -71,11 +143,13 @@ visitUsRouter.get("/categories", async (req, res) => {
       return res.status(400).json({ message: "Token is required" });
     }
 
-    const location = await findLocationByToken(token);
+    const ctx = await findLocationByToken(token);
 
-    if (!location) {
+    if (!ctx) {
       return res.status(401).json({ message: "Invalid token" });
     }
+
+    const { location } = ctx;
 
     const categories = await visitorCategory
       .find({
@@ -105,11 +179,13 @@ visitUsRouter.get("/agreement", async (req, res) => {
       return res.status(400).json({ message: "selectedAgreement is required" });
     }
 
-    const location = await findLocationByToken(token);
+    const ctx = await findLocationByToken(token);
 
-    if (!location) {
+    if (!ctx) {
       return res.status(401).json({ message: "Invalid token" });
     }
+
+    const { location } = ctx;
 
     const allowedIds = [
       ...(location.agreements || []).map((id: any) => id.toString()),
@@ -140,22 +216,16 @@ visitUsRouter.get("/departments", async (req, res) => {
       return res.status(400).json({ message: "Token is required" });
     }
 
-    const location = await findLocationByToken(token);
+    const ctx = await findLocationByToken(token);
 
-    if (!location) {
+    if (!ctx) {
       return res.status(401).json({ message: "Invalid token" });
     }
 
     const searchStr = typeof search === "string" ? search.trim() : "";
-    const filter: Record<string, any> = {
-      company: location.company,
-    };
+    const scopedFilter = buildDepartmentFilter(ctx, searchStr);
 
-    if (searchStr) {
-      filter.name = { $regex: searchStr, $options: "i" };
-    }
-
-    const departments = await DepartmentModel.find(filter)
+    const departments = await DepartmentModel.find(scopedFilter)
       .select("_id name")
       .limit(30)
       .lean();
@@ -176,11 +246,13 @@ visitUsRouter.post("/submitVisitor", async (req, res) => {
       return res.status(400).json({ message: "Token is required" });
     }
 
-    const location = await findLocationByToken(token);
+    const ctx = await findLocationByToken(token);
 
-    if (!location) {
+    if (!ctx) {
       return res.status(401).json({ message: "Invalid token" });
     }
+
+    const { location } = ctx;
 
     if (input.data) {
       input.data = normalizeVisitorData(input.data);
@@ -247,7 +319,12 @@ visitUsRouter.post("/submitVisitor", async (req, res) => {
     let employees: Types.ObjectId[] = [];
 
     if (input.department) {
-      department = await DepartmentModel.findById(input.department)
+      department = await DepartmentModel.findOne({
+        _id: input.department,
+        company: location.company,
+        location: location._id,
+        createdBy: ctx.ownerId,
+      })
         .populate("user")
         .lean();
 
@@ -307,36 +384,38 @@ visitUsRouter.post("/submitVisitor", async (req, res) => {
               [user.firstName, user.lastName].filter(Boolean).join(" ") ||
               user.name ||
               "N/A";
+            const emails = getUserNotificationEmails(user);
 
-            if (type === "arrival") {
-              console.log("input.data", input);
-              await sendVisitorArrivalEmail(
-                visitorFullName,
-                category.name,
-                new Date().toLocaleString(),
-                hostLabel,
-                input.img,
-                user.email,
-                input.signedInDevice || "QR",
-                visitorData,
-              );
-            } else {
-              await sendVisitorApprovalEmail(
-                visitorFullName,
-                category.name,
-                new Date().toLocaleString(),
-                hostLabel,
-                input.img,
-                `${process.env.SERVER_URL}/approveVisitor?visitorId=${visitorId}`,
-                `${process.env.SERVER_URL}/rejectVisitor?visitorId=${visitorId}`,
-                user.email,
-                input.signedInDevice || "QR",
-                visitorData,
-              );
-            }
+            await Promise.all(
+              emails.map((email) =>
+                type === "arrival"
+                  ? sendVisitorArrivalEmail(
+                      visitorFullName,
+                      category.name,
+                      new Date().toLocaleString(),
+                      hostLabel,
+                      input.img,
+                      email,
+                      input.signedInDevice || "QR",
+                      visitorData,
+                    )
+                  : sendVisitorApprovalEmail(
+                      visitorFullName,
+                      category.name,
+                      new Date().toLocaleString(),
+                      hostLabel,
+                      input.img,
+                      `${process.env.SERVER_URL}/approveVisitor?visitorId=${visitorId}`,
+                      `${process.env.SERVER_URL}/rejectVisitor?visitorId=${visitorId}`,
+                      email,
+                      input.signedInDevice || "QR",
+                      visitorData,
+                    ),
+              ),
+            );
           }
 
-          if (user.phone && user.notificationPreference?.includes("SMS")) {
+          if (user.notificationPreference?.includes("SMS")) {
             const hostFirstName = user.firstName?.trim() || "there";
             const companySuffix = input.data?.companyName
               ? ` (${input.data.companyName})`
@@ -346,7 +425,11 @@ visitUsRouter.post("/submitVisitor", async (req, res) => {
                 ? `Hello ${hostFirstName}, new visitor, ${visitorFullName}${companySuffix}, is here to meet you. Maximal Security`
                 : `Hello, A new visitor, ${visitorFullName}, requires approval. Please check your email. — Maximal Security`;
 
-            await sendTwilioMessage(user.phone, msg);
+            await Promise.all(
+              getUserNotificationPhones(user).map((phone) =>
+                sendTwilioMessage(phone, msg),
+              ),
+            );
           }
         }),
       );

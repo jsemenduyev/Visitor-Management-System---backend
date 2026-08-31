@@ -15,8 +15,11 @@ export const UpdateUserInput = new GraphQLInputObjectType({
     firstName: { type: GraphQLString },
     lastName: { type: GraphQLString },
     email: { type: GraphQLString },
+    email2: { type: GraphQLString },
     phone: { type: GraphQLString },
     phoneCountryCode: { type: GraphQLString },
+    phone2: { type: GraphQLString },
+    phoneCountryCode2: { type: GraphQLString },
     role: { type: GraphQLString },
     notificationPreference: { type: new GraphQLList(GraphQLString) },
     company: {

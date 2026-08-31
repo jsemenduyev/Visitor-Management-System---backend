@@ -6,6 +6,7 @@ import { sendTemporaryPasswordEmail } from "../../../../utils/email";
 import { MutationUpdateUserArgs } from "../../../generated/graphql";
 import { dashboardEmployeeFilter } from "../../utils/ownerScope";
 import { createHeadOfficeForAdmin } from "../../utils/locationOwnerScope";
+import { phonesAreDuplicate } from "../../../../utils/phoneValidation";
 
 const generateTempPassword = () =>
   crypto.randomBytes(5).toString("base64url").slice(0, 10);
@@ -50,18 +51,44 @@ export default async (args: MutationUpdateUserArgs, ctx) => {
       }
     }
 
-    // If department is changing, remove user from old department (same company)
-    if (department && user.department && user.department.toString() !== department) {
-      await DepartmentModel.findOneAndUpdate(
-        { _id: user.department, company },
-        { $pull: { user: user._id } }
-      );
-    }
-
     if (updateFields.phoneCountryCode) {
       updateFields.phoneCountryCode = String(updateFields.phoneCountryCode)
         .trim()
         .toLowerCase();
+    }
+
+    if (updateFields.email2 !== undefined) {
+      updateFields.email2 = updateFields.email2?.trim()
+        ? String(updateFields.email2).trim().toLowerCase()
+        : "";
+    }
+
+    if (updateFields.phone2 !== undefined) {
+      if (updateFields.phone2?.trim()) {
+        updateFields.phone2 = String(updateFields.phone2).trim();
+        if (updateFields.phoneCountryCode2) {
+          updateFields.phoneCountryCode2 = String(updateFields.phoneCountryCode2)
+            .trim()
+            .toLowerCase();
+        }
+      } else {
+        updateFields.phone2 = "";
+        updateFields.phoneCountryCode2 = "us";
+      }
+    }
+
+    const resolvedPhone =
+      updateFields.phone !== undefined ? updateFields.phone : user.phone;
+    const resolvedPhone2 =
+      updateFields.phone2 !== undefined ? updateFields.phone2 : user.phone2;
+
+    if (phonesAreDuplicate(resolvedPhone, resolvedPhone2)) {
+      return {
+        error: {
+          message: "Secondary phone must be different from primary phone",
+          code: "DUPLICATE_PHONE",
+        },
+      };
     }
 
     // Update user fields (company cannot be changed via this mutation)

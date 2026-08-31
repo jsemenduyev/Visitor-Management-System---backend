@@ -6,6 +6,7 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
+import { buildContactLessQr } from "../../../utils/contactLessQr";
 import { OfficeLocation } from "../../locations/type/OfficeLocation";
 // 🧩 Nested object type: SelectHostType
 export const AddressType = new GraphQLObjectType({
@@ -197,7 +198,20 @@ export const ContactLess = new GraphQLObjectType({
   name: "ContactLess",
   fields: () => ({
     enabled: { type: GraphQLBoolean },
-    qrCode: { type: GraphQLString },
+    qrCode: {
+      type: GraphQLString,
+      resolve: async (parent) => {
+        if (!parent?.enabled || !parent?.token) {
+          return parent?.qrCode ?? null;
+        }
+        try {
+          const { qrCode } = await buildContactLessQr(parent.token);
+          return qrCode;
+        } catch {
+          return parent?.qrCode ?? null;
+        }
+      },
+    },
     token: { type: GraphQLString },
   }),
 });

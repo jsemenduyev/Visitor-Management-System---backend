@@ -8,6 +8,7 @@ import {
 } from "../../../../utils/email";
 import { MutationCreateUserArgs } from "../../../generated/graphql";
 import { createHeadOfficeForAdmin } from "../../utils/locationOwnerScope";
+import { phonesAreDuplicate } from "../../../../utils/phoneValidation";
 
 const generateTempPassword = () =>
   crypto.randomBytes(5).toString("base64url").slice(0, 10);
@@ -67,6 +68,35 @@ export default async (args: MutationCreateUserArgs, ctx: any) => {
       createPayload.phoneCountryCode = String(input.phoneCountryCode)
         .trim()
         .toLowerCase();
+    }
+
+    if (input.email2?.trim()) {
+      createPayload.email2 = String(input.email2).trim().toLowerCase();
+    } else {
+      delete createPayload.email2;
+    }
+
+    if (input.phone2?.trim()) {
+      createPayload.phone2 = String(input.phone2).trim();
+      if (input.phoneCountryCode2) {
+        createPayload.phoneCountryCode2 = String(input.phoneCountryCode2)
+          .trim()
+          .toLowerCase();
+      }
+    } else {
+      delete createPayload.phone2;
+      delete createPayload.phoneCountryCode2;
+    }
+
+    if (
+      phonesAreDuplicate(createPayload.phone, createPayload.phone2)
+    ) {
+      return {
+        error: {
+          message: "Secondary phone must be different from primary phone",
+          code: "DUPLICATE_PHONE",
+        },
+      };
     }
 
     if (requiresWebsiteAccess) {

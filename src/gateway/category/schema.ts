@@ -4,7 +4,7 @@ import updateCategoryResolver from "./resolver/updateCategoryResolver";
 import { CategoryInput } from "./types/CategoryInput";
 import { categoryPayload } from "./types/CategoryPayload";
 import { ReorderItemInput, UpdateCategoryInput } from "./types/UpdateCategoryInput";
-import { FieldType, VisitorCategoryType } from "./types/VisitorCategory";
+import { FieldOptionInput, FieldType, VisitorCategoryType } from "./types/VisitorCategory";
 import getCategoriesResolver from "./resolver/getCategoriesResolver";
 import getFieldResolver from "./resolver/getFieldResolver";
 import updateFieldResolver from "./resolver/updateFieldResolver";
@@ -78,6 +78,9 @@ export const categoryMuttaion = {
       },
       clearResponseAfterEachVisit: {
         type: GraphQLBoolean,
+      },
+      options: {
+        type: new GraphQLList(FieldOptionInput),
       },
     },
     resolve: updateFieldResolver,

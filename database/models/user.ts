@@ -30,6 +30,22 @@ const UserSchema = new Schema(
       lowercase: true,
       trim: true,
     },
+    email2: {
+      type: String,
+      lowercase: true,
+      trim: true,
+      default: "",
+    },
+    phone2: {
+      type: String,
+      default: "",
+    },
+    phoneCountryCode2: {
+      type: String,
+      default: "us",
+      lowercase: true,
+      trim: true,
+    },
     password: {
       type: String,
       minlength: 6, // enforce minimum password length

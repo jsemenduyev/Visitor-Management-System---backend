@@ -4,6 +4,10 @@ import { UserModel } from "../../../../database/models/user";
 import VisitorModel from "../../../../database/models/visitor";
 import visitorCategory from "../../../../database/models/visitorCategory";
 import { sendVisitorApprovalEmail } from "../../../../utils/approvalEmail";
+import {
+  getUserNotificationEmails,
+  getUserNotificationPhones,
+} from "../../../../utils/userNotificationContacts";
 import { sendVisitorArrivalEmail } from "../../../../utils/VisitorEmail";
 import {
   normalizeVisitorData,
@@ -154,35 +158,38 @@ async function notifyVisitorHosts(visitor: any) {
     notifyTargets.map(async (user) => {
       if (user.notificationPreference?.includes("Email")) {
         const hostLabel = hostLabelForUser(user, department?.name);
+        const emails = getUserNotificationEmails(user);
 
-        if (type === "arrival") {
-          await sendVisitorArrivalEmail(
-            visitorName,
-            category.name,
-            new Date().toLocaleString(),
-            hostLabel,
-            photoUrl,
-            user.email,
-            deviceLabel,
-            visitorData,
-          );
-        } else {
-          await sendVisitorApprovalEmail(
-            visitorName,
-            category.name,
-            new Date().toLocaleString(),
-            hostLabel,
-            photoUrl,
-            `${process.env.SERVER_URL}/approveVisitor?visitorId=${visitorId}`,
-            `${process.env.SERVER_URL}/rejectVisitor?visitorId=${visitorId}`,
-            user.email,
-            deviceLabel,
-            visitorData,
-          );
-        }
+        await Promise.all(
+          emails.map((email) =>
+            type === "arrival"
+              ? sendVisitorArrivalEmail(
+                  visitorName,
+                  category.name,
+                  new Date().toLocaleString(),
+                  hostLabel,
+                  photoUrl,
+                  email,
+                  deviceLabel,
+                  visitorData,
+                )
+              : sendVisitorApprovalEmail(
+                  visitorName,
+                  category.name,
+                  new Date().toLocaleString(),
+                  hostLabel,
+                  photoUrl,
+                  `${process.env.SERVER_URL}/approveVisitor?visitorId=${visitorId}`,
+                  `${process.env.SERVER_URL}/rejectVisitor?visitorId=${visitorId}`,
+                  email,
+                  deviceLabel,
+                  visitorData,
+                ),
+          ),
+        );
       }
 
-      if (user.phone && user.notificationPreference?.includes("SMS")) {
+      if (user.notificationPreference?.includes("SMS")) {
         const hostFirstName = user.firstName?.trim() || "there";
         const companySuffix = dataObj.companyName
           ? ` (${dataObj.companyName})`
@@ -192,7 +199,11 @@ async function notifyVisitorHosts(visitor: any) {
             ? `Hello ${hostFirstName}, new visitor, ${visitorName}${companySuffix}, is here to meet you. Maximal Security`
             : `Hello, A new visitor, ${visitorName}, requires approval. Please check your email. — Maximal Security`;
 
-        await sendTwilioMessage(user.phone, msg);
+        await Promise.all(
+          getUserNotificationPhones(user).map((phone) =>
+            sendTwilioMessage(phone, msg),
+          ),
+        );
       }
     }),
   );

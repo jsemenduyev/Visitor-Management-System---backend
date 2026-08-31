@@ -6,6 +6,7 @@ import {
   GraphQLID,
   GraphQLNonNull,
 } from "graphql";
+import { FieldOptionInput } from "./VisitorCategory";
 
 const FieldInput = new GraphQLInputObjectType({
   name: "FieldInput",
@@ -18,6 +19,7 @@ const FieldInput = new GraphQLInputObjectType({
       type: GraphQLBoolean,
     },
     clearResponseAfterEachVisit: { type: GraphQLBoolean },
+    options: { type: new GraphQLList(FieldOptionInput) },
   }),
 });
 

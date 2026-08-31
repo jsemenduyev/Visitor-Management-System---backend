@@ -1,5 +1,10 @@
 import mongoose, { Document, Schema, Types } from "mongoose";
 
+interface IFieldOption {
+  label?: string;
+  value?: string;
+}
+
 interface IField {
   name: string;
   label?: string;
@@ -8,6 +13,7 @@ interface IField {
   enabled?: boolean;
   priority?: number;
   clearResponseAfterEachVisit?: boolean;
+  options?: IFieldOption[];
 }
 
 interface IVisitorCategory extends Document {
@@ -42,6 +48,15 @@ const FieldSchema = new mongoose.Schema<IField>({
   enabled: { type: Boolean, default: true },
   priority: { type: Number, default: 0 },
   clearResponseAfterEachVisit: { type: Boolean, default: false },
+  options: {
+    type: [
+      {
+        label: { type: String },
+        value: { type: String },
+      },
+    ],
+    default: undefined,
+  },
 });
 
 const VisitorCategorySchema = new mongoose.Schema<IVisitorCategory>(

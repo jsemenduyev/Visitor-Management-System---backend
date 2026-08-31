@@ -394,6 +394,24 @@ export type ErrorType = {
   message: Scalars['String']['output'];
 };
 
+export type EvacuationList = {
+  __typename?: 'EvacuationList';
+  count?: Maybe<Scalars['Int']['output']>;
+  list?: Maybe<Array<Maybe<EvacuationPerson>>>;
+};
+
+export type EvacuationPerson = {
+  __typename?: 'EvacuationPerson';
+  anonymize?: Maybe<Scalars['Boolean']['output']>;
+  contact?: Maybe<Scalars['String']['output']>;
+  id?: Maybe<Scalars['ID']['output']>;
+  img?: Maybe<Scalars['String']['output']>;
+  name?: Maybe<Scalars['String']['output']>;
+  signedIn?: Maybe<Scalars['DateTime']['output']>;
+  signedType?: Maybe<Scalars['String']['output']>;
+  type?: Maybe<Scalars['String']['output']>;
+};
+
 export type Field = {
   __typename?: 'Field';
   clearResponseAfterEachVisit?: Maybe<Scalars['Boolean']['output']>;
@@ -401,6 +419,7 @@ export type Field = {
   id?: Maybe<Scalars['String']['output']>;
   label?: Maybe<Scalars['String']['output']>;
   name?: Maybe<Scalars['String']['output']>;
+  options?: Maybe<Array<Maybe<FieldOption>>>;
   priority?: Maybe<Scalars['Int']['output']>;
   required?: Maybe<Scalars['Boolean']['output']>;
   type?: Maybe<Scalars['String']['output']>;
@@ -411,8 +430,20 @@ export type FieldInput = {
   enabled?: InputMaybe<Scalars['Boolean']['input']>;
   label?: InputMaybe<Scalars['String']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
+  options?: InputMaybe<Array<InputMaybe<FieldOptionInput>>>;
   required?: InputMaybe<Scalars['Boolean']['input']>;
   type?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type FieldOption = {
+  __typename?: 'FieldOption';
+  label?: Maybe<Scalars['String']['output']>;
+  value?: Maybe<Scalars['String']['output']>;
+};
+
+export type FieldOptionInput = {
+  label?: InputMaybe<Scalars['String']['input']>;
+  value?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type GeneralDeliveryContact = {
@@ -532,6 +563,7 @@ export type Mutation = {
   createVisitor?: Maybe<VisitorPaylaod>;
   createdEmployeeTimelineDevice?: Maybe<EmployeePaylaod>;
   deleteAgreement?: Maybe<Scalars['String']['output']>;
+  deleteBookingSpace?: Maybe<BookingSpacePayload>;
   deleteCategory?: Maybe<Scalars['String']['output']>;
   deleteDelivery?: Maybe<Scalars['String']['output']>;
   deleteDepartment?: Maybe<Scalars['String']['output']>;
@@ -547,10 +579,11 @@ export type Mutation = {
   removeMsTeamsIntegration?: Maybe<IntegrationType>;
   reorderCategories?: Maybe<Scalars['String']['output']>;
   reorderFields?: Maybe<Scalars['String']['output']>;
-  resetPasword?: Maybe<UserPaylaod>;
+  resetPassword?: Maybe<UserPaylaod>;
   restoreEmployee?: Maybe<UserPaylaod>;
   saveMsTeamsChannel?: Maybe<IntegrationType>;
   signup?: Maybe<UserPaylaod>;
+  updateBookingSpace?: Maybe<BookingSpacePayload>;
   updateCategory?: Maybe<CategoryType>;
   updateCompany?: Maybe<Scalars['String']['output']>;
   updateCompanyImgs?: Maybe<Scalars['String']['output']>;
@@ -576,7 +609,10 @@ export type MutationAddBookingSpaceArgs = {
 export type MutationAddLocationArgs = {
   _id?: InputMaybe<Scalars['ID']['input']>;
   address?: InputMaybe<Scalars['String']['input']>;
+  copyFromLocationId?: InputMaybe<Scalars['ID']['input']>;
   customHeading?: InputMaybe<Scalars['String']['input']>;
+  lat?: InputMaybe<Scalars['String']['input']>;
+  lng?: InputMaybe<Scalars['String']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -677,6 +713,11 @@ export type MutationDeleteAgreementArgs = {
 };
 
 
+export type MutationDeleteBookingSpaceArgs = {
+  id?: InputMaybe<Scalars['ID']['input']>;
+};
+
+
 export type MutationDeleteCategoryArgs = {
   categoryId?: InputMaybe<Scalars['ID']['input']>;
 };
@@ -750,8 +791,9 @@ export type MutationReorderFieldsArgs = {
 };
 
 
-export type MutationResetPaswordArgs = {
+export type MutationResetPasswordArgs = {
   email?: InputMaybe<Scalars['String']['input']>;
+  otp?: InputMaybe<Scalars['String']['input']>;
   password?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -769,6 +811,12 @@ export type MutationSaveMsTeamsChannelArgs = {
 
 export type MutationSignupArgs = {
   input?: InputMaybe<SignUpInputType>;
+};
+
+
+export type MutationUpdateBookingSpaceArgs = {
+  id?: InputMaybe<Scalars['ID']['input']>;
+  input?: InputMaybe<BookingSpaceInput>;
 };
 
 
@@ -803,6 +851,7 @@ export type MutationUpdateFieldArgs = {
   clearResponseAfterEachVisit?: InputMaybe<Scalars['Boolean']['input']>;
   enabled?: InputMaybe<Scalars['Boolean']['input']>;
   fieldId?: InputMaybe<Scalars['ID']['input']>;
+  options?: InputMaybe<Array<InputMaybe<FieldOptionInput>>>;
   required?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
@@ -875,6 +924,8 @@ export type OfficeLocation = {
   devices?: Maybe<Array<Maybe<Device>>>;
   employees?: Maybe<EmployeeSettings>;
   id?: Maybe<Scalars['ID']['output']>;
+  lat?: Maybe<Scalars['String']['output']>;
+  lng?: Maybe<Scalars['String']['output']>;
   name?: Maybe<Scalars['String']['output']>;
   returningVisitors?: Maybe<ReturningVisitorsType>;
   savedImgs?: Maybe<Array<Maybe<SavedImgsType>>>;
@@ -937,6 +988,8 @@ export type Query = {
   getAgreement?: Maybe<AgreementType>;
   getAgreements?: Maybe<Array<Maybe<AgreementType>>>;
   getArchivedEmployees?: Maybe<UserList>;
+  getAvailableResources?: Maybe<Array<Maybe<ResourceSchedule>>>;
+  getAvailableSpaces?: Maybe<Array<Maybe<SpaceSchedule>>>;
   getBookingSpaces?: Maybe<Array<Maybe<BookingSpaceType>>>;
   getCategories?: Maybe<Array<Maybe<VisitorCategory>>>;
   getCompanyDetails?: Maybe<Company>;
@@ -949,17 +1002,16 @@ export type Query = {
   getDevices?: Maybe<Array<Maybe<Device>>>;
   getEmployeeTimeline?: Maybe<EmployeeTimelineList>;
   getEmployeesTimeline?: Maybe<EmployeeTimelineList>;
+  getEvacuationList?: Maybe<EvacuationList>;
   getField?: Maybe<Array<Maybe<Field>>>;
   getIntegrations?: Maybe<IntegrationType>;
   getOfficeLocation?: Maybe<OfficeLocation>;
   getOfficeLocations?: Maybe<Array<Maybe<OfficeLocation>>>;
   getPreVisitors?: Maybe<PreRegisterList>;
   getResourceSchedule?: Maybe<Array<Maybe<ResourceSchedule>>>;
-  getAvailableResources?: Maybe<Array<Maybe<ResourceSchedule>>>;
-  getAvailableSpaces?: Maybe<Array<Maybe<SpaceSchedule>>>;
-  getSpaceSchedule?: Maybe<Array<Maybe<SpaceSchedule>>>;
   getSpaceCategories?: Maybe<Array<Maybe<SpacesCategoryType>>>;
   getSpaceResource?: Maybe<Array<Maybe<SpacesResourceType>>>;
+  getSpaceSchedule?: Maybe<Array<Maybe<SpaceSchedule>>>;
   getSpaces?: Maybe<Array<Maybe<SpacesType>>>;
   getUsers?: Maybe<UserList>;
   getVistors?: Maybe<VisitorList>;
@@ -986,6 +1038,22 @@ export type QueryGetArchivedEmployeesArgs = {
   limit?: InputMaybe<Scalars['Int']['input']>;
   offset?: InputMaybe<Scalars['Int']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryGetAvailableResourcesArgs = {
+  end: Scalars['String']['input'];
+  location: Scalars['ID']['input'];
+  resourceCategory?: InputMaybe<Scalars['ID']['input']>;
+  start: Scalars['String']['input'];
+};
+
+
+export type QueryGetAvailableSpacesArgs = {
+  end: Scalars['String']['input'];
+  location: Scalars['ID']['input'];
+  resource?: InputMaybe<Scalars['ID']['input']>;
+  start: Scalars['String']['input'];
 };
 
 
@@ -1072,6 +1140,15 @@ export type QueryGetEmployeesTimelineArgs = {
 };
 
 
+export type QueryGetEvacuationListArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  location?: InputMaybe<Scalars['String']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  search?: InputMaybe<Scalars['String']['input']>;
+  signedType?: InputMaybe<Scalars['String']['input']>;
+};
+
+
 export type QueryGetFieldArgs = {
   categoryId?: InputMaybe<Scalars['ID']['input']>;
 };
@@ -1087,7 +1164,7 @@ export type QueryGetPreVisitorsArgs = {
   company: Scalars['ID']['input'];
   endDate?: InputMaybe<Scalars['String']['input']>;
   limit?: InputMaybe<Scalars['Int']['input']>;
-  location: Scalars['ID']['input'];
+  location?: InputMaybe<Scalars['ID']['input']>;
   offset?: InputMaybe<Scalars['Int']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
   sorted?: InputMaybe<SortedInput>;
@@ -1114,6 +1191,16 @@ export type QueryGetSpaceResourceArgs = {
   location: Scalars['ID']['input'];
   resourceCategory?: InputMaybe<Scalars['ID']['input']>;
   space?: InputMaybe<Scalars['ID']['input']>;
+};
+
+
+export type QueryGetSpaceScheduleArgs = {
+  endDate: Scalars['String']['input'];
+  location: Scalars['ID']['input'];
+  minCapacity?: InputMaybe<Scalars['Int']['input']>;
+  resourceIds?: InputMaybe<Array<InputMaybe<Scalars['ID']['input']>>>;
+  space?: InputMaybe<Scalars['ID']['input']>;
+  startDate: Scalars['String']['input'];
 };
 
 
@@ -1176,16 +1263,6 @@ export type ResourceSchedule = {
   name?: Maybe<Scalars['String']['output']>;
   resourceName?: Maybe<Scalars['String']['output']>;
   space?: Maybe<SpacesType>;
-};
-
-export type SpaceSchedule = {
-  __typename?: 'SpaceSchedule';
-  _id?: Maybe<Scalars['ID']['output']>;
-  availablePeople?: Maybe<Scalars['Int']['output']>;
-  bookedPeople?: Maybe<Scalars['Int']['output']>;
-  bookings?: Maybe<Array<Maybe<SimpleBookingTime>>>;
-  capacity?: Maybe<Scalars['Int']['output']>;
-  name?: Maybe<Scalars['String']['output']>;
 };
 
 export type ReturningVisitorsInput = {
@@ -1257,12 +1334,14 @@ export type SignInNotificationRecipientInput = {
 
 export type SignInNotificationsInput = {
   enabled?: InputMaybe<Scalars['Boolean']['input']>;
+  includeAllVisitorResponses?: InputMaybe<Scalars['Boolean']['input']>;
   recipients?: InputMaybe<Array<InputMaybe<SignInNotificationRecipientInput>>>;
 };
 
 export type SignInNotificationsType = {
   __typename?: 'SignInNotificationsType';
   enabled?: Maybe<Scalars['Boolean']['output']>;
+  includeAllVisitorResponses?: Maybe<Scalars['Boolean']['output']>;
   recipients?: Maybe<Array<Maybe<SignInNotificationRecipient>>>;
 };
 
@@ -1333,14 +1412,30 @@ export enum SignatureTypeEnum {
 
 export type SimpleBookingTime = {
   __typename?: 'SimpleBookingTime';
+  _id?: Maybe<Scalars['ID']['output']>;
+  employeeId?: Maybe<Scalars['ID']['output']>;
+  employeeName?: Maybe<Scalars['String']['output']>;
   end?: Maybe<Scalars['DateTime']['output']>;
   people?: Maybe<Scalars['Int']['output']>;
+  spaceId?: Maybe<Scalars['ID']['output']>;
+  spaceName?: Maybe<Scalars['String']['output']>;
   start?: Maybe<Scalars['DateTime']['output']>;
 };
 
 export type SortedInput = {
   columnId?: InputMaybe<Scalars['String']['input']>;
   direction?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type SpaceSchedule = {
+  __typename?: 'SpaceSchedule';
+  _id?: Maybe<Scalars['ID']['output']>;
+  availablePeople?: Maybe<Scalars['Int']['output']>;
+  bookedPeople?: Maybe<Scalars['Int']['output']>;
+  bookings?: Maybe<Array<Maybe<SimpleBookingTime>>>;
+  capacity?: Maybe<Scalars['Int']['output']>;
+  name?: Maybe<Scalars['String']['output']>;
+  resources?: Maybe<Array<Maybe<SpacesResourceType>>>;
 };
 
 export type SpacesCategoryInputType = {
@@ -1369,6 +1464,7 @@ export type SpacesInputType = {
   location?: InputMaybe<Scalars['ID']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   resource?: InputMaybe<Scalars['String']['input']>;
+  resources?: InputMaybe<Array<InputMaybe<Scalars['ID']['input']>>>;
 };
 
 export type SpacesPaylaod = {
@@ -1381,6 +1477,7 @@ export type SpacesResourceInput = {
   capacity?: InputMaybe<Scalars['Int']['input']>;
   employees?: InputMaybe<Array<InputMaybe<Scalars['ID']['input']>>>;
   features?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  icon?: InputMaybe<Scalars['String']['input']>;
   location?: InputMaybe<Scalars['ID']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   notes?: InputMaybe<Scalars['String']['input']>;
@@ -1401,12 +1498,14 @@ export type SpacesResourceType = {
   capacity?: Maybe<Scalars['Int']['output']>;
   employees?: Maybe<Array<Maybe<User>>>;
   features?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
+  icon?: Maybe<Scalars['String']['output']>;
   location?: Maybe<OfficeLocation>;
   name?: Maybe<Scalars['String']['output']>;
   notes?: Maybe<Scalars['String']['output']>;
   photo?: Maybe<Scalars['String']['output']>;
   resourceCategory?: Maybe<SpacesCategoryType>;
   space?: Maybe<SpacesType>;
+  spaces?: Maybe<Array<Maybe<SpacesType>>>;
 };
 
 export type SpacesType = {
@@ -1480,6 +1579,7 @@ export type UpdateFieldInput = {
   enabled?: InputMaybe<Scalars['Boolean']['input']>;
   label?: InputMaybe<Scalars['String']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
+  options?: InputMaybe<Array<InputMaybe<FieldOptionInput>>>;
   priority?: InputMaybe<Scalars['Int']['input']>;
   required?: InputMaybe<Scalars['Boolean']['input']>;
   type?: InputMaybe<Scalars['String']['input']>;
@@ -1490,13 +1590,16 @@ export type UpdateUserInput = {
   company?: InputMaybe<Scalars['ID']['input']>;
   department?: InputMaybe<Scalars['ID']['input']>;
   email?: InputMaybe<Scalars['String']['input']>;
+  email2?: InputMaybe<Scalars['String']['input']>;
   firstName?: InputMaybe<Scalars['String']['input']>;
   img?: InputMaybe<Scalars['String']['input']>;
   lastName?: InputMaybe<Scalars['String']['input']>;
   location?: InputMaybe<Scalars['ID']['input']>;
   notificationPreference?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   phone?: InputMaybe<Scalars['String']['input']>;
+  phone2?: InputMaybe<Scalars['String']['input']>;
   phoneCountryCode?: InputMaybe<Scalars['String']['input']>;
+  phoneCountryCode2?: InputMaybe<Scalars['String']['input']>;
   role?: InputMaybe<Scalars['String']['input']>;
   status?: InputMaybe<UpdateUserStatusInput>;
   workingRemote?: InputMaybe<Scalars['String']['input']>;
@@ -1529,15 +1632,19 @@ export type User = {
   createdAt?: Maybe<Scalars['Date']['output']>;
   department?: Maybe<Department>;
   email?: Maybe<Scalars['String']['output']>;
+  email2?: Maybe<Scalars['String']['output']>;
   firstName?: Maybe<Scalars['String']['output']>;
   id?: Maybe<Scalars['ID']['output']>;
   img?: Maybe<Scalars['String']['output']>;
   isArchived?: Maybe<Scalars['Boolean']['output']>;
   lastName?: Maybe<Scalars['String']['output']>;
   location?: Maybe<OfficeLocation>;
+  needPasswordReset?: Maybe<Scalars['Boolean']['output']>;
   notificationPreference?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
   phone?: Maybe<Scalars['String']['output']>;
+  phone2?: Maybe<Scalars['String']['output']>;
   phoneCountryCode?: Maybe<Scalars['String']['output']>;
+  phoneCountryCode2?: Maybe<Scalars['String']['output']>;
   role?: Maybe<RoleEnum>;
   timeline?: Maybe<EmployeeTimeline>;
   updatedAt?: Maybe<Scalars['Date']['output']>;
@@ -1548,6 +1655,7 @@ export type UserInput = {
   company?: InputMaybe<Scalars['ID']['input']>;
   department?: InputMaybe<Scalars['ID']['input']>;
   email?: InputMaybe<Scalars['String']['input']>;
+  email2?: InputMaybe<Scalars['String']['input']>;
   firstName?: InputMaybe<Scalars['String']['input']>;
   img?: InputMaybe<Scalars['String']['input']>;
   lastName?: InputMaybe<Scalars['String']['input']>;
@@ -1555,7 +1663,9 @@ export type UserInput = {
   notificationPreference?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   password?: InputMaybe<Scalars['String']['input']>;
   phone?: InputMaybe<Scalars['String']['input']>;
+  phone2?: InputMaybe<Scalars['String']['input']>;
   phoneCountryCode?: InputMaybe<Scalars['String']['input']>;
+  phoneCountryCode2?: InputMaybe<Scalars['String']['input']>;
   role?: InputMaybe<Scalars['String']['input']>;
   status?: InputMaybe<UserStatusInput>;
   workingRemote?: InputMaybe<Scalars['String']['input']>;
@@ -1585,6 +1695,8 @@ export type Visitor = {
   category?: Maybe<VisitorCategory>;
   data?: Maybe<Scalars['JSON']['output']>;
   department?: Maybe<Department>;
+  deviceId?: Maybe<Scalars['String']['output']>;
+  deviceName?: Maybe<Scalars['String']['output']>;
   employees?: Maybe<Array<Maybe<User>>>;
   id?: Maybe<Scalars['ID']['output']>;
   img?: Maybe<Scalars['String']['output']>;
@@ -1633,6 +1745,8 @@ export type VisitorInput = {
   category?: InputMaybe<Scalars['ID']['input']>;
   data?: InputMaybe<Scalars['JSON']['input']>;
   department?: InputMaybe<Scalars['ID']['input']>;
+  deviceId?: InputMaybe<Scalars['String']['input']>;
+  deviceName?: InputMaybe<Scalars['String']['input']>;
   employee?: InputMaybe<Scalars['ID']['input']>;
   img?: InputMaybe<Scalars['String']['input']>;
   isReturning?: InputMaybe<Scalars['Boolean']['input']>;
@@ -1817,6 +1931,8 @@ export type ResolversTypes = {
   EmployeeTimelineInput: EmployeeTimelineInput;
   EmployeeTimelineList: ResolverTypeWrapper<EmployeeTimelineList>;
   ErrorType: ResolverTypeWrapper<ErrorType>;
+  EvacuationList: ResolverTypeWrapper<EvacuationList>;
+  EvacuationPerson: ResolverTypeWrapper<EvacuationPerson>;
   Field: ResolverTypeWrapper<Field>;
   FieldInput: FieldInput;
   GeneralDeliveryContact: GeneralDeliveryContact;
@@ -1874,6 +1990,7 @@ export type ResolversTypes = {
   SignatureTypeEnum: SignatureTypeEnum;
   SimpleBookingTime: ResolverTypeWrapper<SimpleBookingTime>;
   SortedInput: SortedInput;
+  SpaceSchedule: ResolverTypeWrapper<SpaceSchedule>;
   SpacesCategoryInputType: SpacesCategoryInputType;
   SpacesCategoryPayload: ResolverTypeWrapper<SpacesCategoryPayload>;
   SpacesCategoryType: ResolverTypeWrapper<SpacesCategoryType>;
@@ -1965,6 +2082,8 @@ export type ResolversParentTypes = {
   EmployeeTimelineInput: EmployeeTimelineInput;
   EmployeeTimelineList: EmployeeTimelineList;
   ErrorType: ErrorType;
+  EvacuationList: EvacuationList;
+  EvacuationPerson: EvacuationPerson;
   Field: Field;
   FieldInput: FieldInput;
   GeneralDeliveryContact: GeneralDeliveryContact;
@@ -2020,6 +2139,7 @@ export type ResolversParentTypes = {
   SignUpInputType: SignUpInputType;
   SimpleBookingTime: SimpleBookingTime;
   SortedInput: SortedInput;
+  SpaceSchedule: SpaceSchedule;
   SpacesCategoryInputType: SpacesCategoryInputType;
   SpacesCategoryPayload: SpacesCategoryPayload;
   SpacesCategoryType: SpacesCategoryType;
@@ -2108,6 +2228,7 @@ export type BookingSpaceTypeResolvers<ContextType = any, ParentType extends Reso
   employee?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
   end?: Resolver<Maybe<ResolversTypes['DateTime']>, ParentType, ContextType>;
   location?: Resolver<Maybe<ResolversTypes['OfficeLocation']>, ParentType, ContextType>;
+  people?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
   resource?: Resolver<Maybe<ResolversTypes['SpacesResourceType']>, ParentType, ContextType>;
   space?: Resolver<Maybe<ResolversTypes['SpacesType']>, ParentType, ContextType>;
   start?: Resolver<Maybe<ResolversTypes['DateTime']>, ParentType, ContextType>;
@@ -2281,6 +2402,24 @@ export type ErrorTypeResolvers<ContextType = any, ParentType extends ResolversPa
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type EvacuationListResolvers<ContextType = any, ParentType extends ResolversParentTypes['EvacuationList'] = ResolversParentTypes['EvacuationList']> = {
+  count?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  list?: Resolver<Maybe<Array<Maybe<ResolversTypes['EvacuationPerson']>>>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type EvacuationPersonResolvers<ContextType = any, ParentType extends ResolversParentTypes['EvacuationPerson'] = ResolversParentTypes['EvacuationPerson']> = {
+  anonymize?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
+  contact?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  id?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  img?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  name?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  signedIn?: Resolver<Maybe<ResolversTypes['DateTime']>, ParentType, ContextType>;
+  signedType?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  type?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type FieldResolvers<ContextType = any, ParentType extends ResolversParentTypes['Field'] = ResolversParentTypes['Field']> = {
   clearResponseAfterEachVisit?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   enabled?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
@@ -2384,6 +2523,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   createVisitor?: Resolver<Maybe<ResolversTypes['VisitorPaylaod']>, ParentType, ContextType, Partial<MutationCreateVisitorArgs>>;
   createdEmployeeTimelineDevice?: Resolver<Maybe<ResolversTypes['EmployeePaylaod']>, ParentType, ContextType, Partial<MutationCreatedEmployeeTimelineDeviceArgs>>;
   deleteAgreement?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType, RequireFields<MutationDeleteAgreementArgs, 'id'>>;
+  deleteBookingSpace?: Resolver<Maybe<ResolversTypes['BookingSpacePayload']>, ParentType, ContextType, Partial<MutationDeleteBookingSpaceArgs>>;
   deleteCategory?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType, Partial<MutationDeleteCategoryArgs>>;
   deleteDelivery?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType, Partial<MutationDeleteDeliveryArgs>>;
   deleteDepartment?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType, Partial<MutationDeleteDepartmentArgs>>;
@@ -2399,10 +2539,11 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   removeMsTeamsIntegration?: Resolver<Maybe<ResolversTypes['IntegrationType']>, ParentType, ContextType>;
   reorderCategories?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType, RequireFields<MutationReorderCategoriesArgs, 'items'>>;
   reorderFields?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType, RequireFields<MutationReorderFieldsArgs, 'categoryId' | 'items'>>;
-  resetPasword?: Resolver<Maybe<ResolversTypes['UserPaylaod']>, ParentType, ContextType, Partial<MutationResetPaswordArgs>>;
+  resetPassword?: Resolver<Maybe<ResolversTypes['UserPaylaod']>, ParentType, ContextType, Partial<MutationResetPasswordArgs>>;
   restoreEmployee?: Resolver<Maybe<ResolversTypes['UserPaylaod']>, ParentType, ContextType, Partial<MutationRestoreEmployeeArgs>>;
   saveMsTeamsChannel?: Resolver<Maybe<ResolversTypes['IntegrationType']>, ParentType, ContextType, RequireFields<MutationSaveMsTeamsChannelArgs, 'channels' | 'teamId'>>;
   signup?: Resolver<Maybe<ResolversTypes['UserPaylaod']>, ParentType, ContextType, Partial<MutationSignupArgs>>;
+  updateBookingSpace?: Resolver<Maybe<ResolversTypes['BookingSpacePayload']>, ParentType, ContextType, Partial<MutationUpdateBookingSpaceArgs>>;
   updateCategory?: Resolver<Maybe<ResolversTypes['CategoryType']>, ParentType, ContextType, Partial<MutationUpdateCategoryArgs>>;
   updateCompany?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType, Partial<MutationUpdateCompanyArgs>>;
   updateCompanyImgs?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType, RequireFields<MutationUpdateCompanyImgsArgs, 'locationId'>>;
@@ -2437,6 +2578,8 @@ export type OfficeLocationResolvers<ContextType = any, ParentType extends Resolv
   devices?: Resolver<Maybe<Array<Maybe<ResolversTypes['Device']>>>, ParentType, ContextType>;
   employees?: Resolver<Maybe<ResolversTypes['EmployeeSettings']>, ParentType, ContextType>;
   id?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  lat?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  lng?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   name?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   returningVisitors?: Resolver<Maybe<ResolversTypes['ReturningVisitorsType']>, ParentType, ContextType>;
   savedImgs?: Resolver<Maybe<Array<Maybe<ResolversTypes['SavedImgsType']>>>, ParentType, ContextType>;
@@ -2485,6 +2628,8 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   getAgreement?: Resolver<Maybe<ResolversTypes['AgreementType']>, ParentType, ContextType, Partial<QueryGetAgreementArgs>>;
   getAgreements?: Resolver<Maybe<Array<Maybe<ResolversTypes['AgreementType']>>>, ParentType, ContextType, Partial<QueryGetAgreementsArgs>>;
   getArchivedEmployees?: Resolver<Maybe<ResolversTypes['UserList']>, ParentType, ContextType, Partial<QueryGetArchivedEmployeesArgs>>;
+  getAvailableResources?: Resolver<Maybe<Array<Maybe<ResolversTypes['ResourceSchedule']>>>, ParentType, ContextType, RequireFields<QueryGetAvailableResourcesArgs, 'end' | 'location' | 'start'>>;
+  getAvailableSpaces?: Resolver<Maybe<Array<Maybe<ResolversTypes['SpaceSchedule']>>>, ParentType, ContextType, RequireFields<QueryGetAvailableSpacesArgs, 'end' | 'location' | 'start'>>;
   getBookingSpaces?: Resolver<Maybe<Array<Maybe<ResolversTypes['BookingSpaceType']>>>, ParentType, ContextType, Partial<QueryGetBookingSpacesArgs>>;
   getCategories?: Resolver<Maybe<Array<Maybe<ResolversTypes['VisitorCategory']>>>, ParentType, ContextType, RequireFields<QueryGetCategoriesArgs, 'location'>>;
   getCompanyDetails?: Resolver<Maybe<ResolversTypes['Company']>, ParentType, ContextType>;
@@ -2497,14 +2642,16 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   getDevices?: Resolver<Maybe<Array<Maybe<ResolversTypes['Device']>>>, ParentType, ContextType, RequireFields<QueryGetDevicesArgs, 'location'>>;
   getEmployeeTimeline?: Resolver<Maybe<ResolversTypes['EmployeeTimelineList']>, ParentType, ContextType, Partial<QueryGetEmployeeTimelineArgs>>;
   getEmployeesTimeline?: Resolver<Maybe<ResolversTypes['EmployeeTimelineList']>, ParentType, ContextType, Partial<QueryGetEmployeesTimelineArgs>>;
+  getEvacuationList?: Resolver<Maybe<ResolversTypes['EvacuationList']>, ParentType, ContextType, Partial<QueryGetEvacuationListArgs>>;
   getField?: Resolver<Maybe<Array<Maybe<ResolversTypes['Field']>>>, ParentType, ContextType, Partial<QueryGetFieldArgs>>;
   getIntegrations?: Resolver<Maybe<ResolversTypes['IntegrationType']>, ParentType, ContextType>;
   getOfficeLocation?: Resolver<Maybe<ResolversTypes['OfficeLocation']>, ParentType, ContextType, RequireFields<QueryGetOfficeLocationArgs, 'locationId'>>;
   getOfficeLocations?: Resolver<Maybe<Array<Maybe<ResolversTypes['OfficeLocation']>>>, ParentType, ContextType>;
-  getPreVisitors?: Resolver<Maybe<ResolversTypes['PreRegisterList']>, ParentType, ContextType, RequireFields<QueryGetPreVisitorsArgs, 'company' | 'location'>>;
+  getPreVisitors?: Resolver<Maybe<ResolversTypes['PreRegisterList']>, ParentType, ContextType, RequireFields<QueryGetPreVisitorsArgs, 'company'>>;
   getResourceSchedule?: Resolver<Maybe<Array<Maybe<ResolversTypes['ResourceSchedule']>>>, ParentType, ContextType, RequireFields<QueryGetResourceScheduleArgs, 'endDate' | 'location' | 'startDate'>>;
   getSpaceCategories?: Resolver<Maybe<Array<Maybe<ResolversTypes['SpacesCategoryType']>>>, ParentType, ContextType, RequireFields<QueryGetSpaceCategoriesArgs, 'location'>>;
   getSpaceResource?: Resolver<Maybe<Array<Maybe<ResolversTypes['SpacesResourceType']>>>, ParentType, ContextType, RequireFields<QueryGetSpaceResourceArgs, 'location'>>;
+  getSpaceSchedule?: Resolver<Maybe<Array<Maybe<ResolversTypes['SpaceSchedule']>>>, ParentType, ContextType, RequireFields<QueryGetSpaceScheduleArgs, 'endDate' | 'location' | 'startDate'>>;
   getSpaces?: Resolver<Maybe<Array<Maybe<ResolversTypes['SpacesType']>>>, ParentType, ContextType, RequireFields<QueryGetSpacesArgs, 'location'>>;
   getUsers?: Resolver<Maybe<ResolversTypes['UserList']>, ParentType, ContextType, Partial<QueryGetUsersArgs>>;
   getVistors?: Resolver<Maybe<ResolversTypes['VisitorList']>, ParentType, ContextType, Partial<QueryGetVistorsArgs>>;
@@ -2520,9 +2667,14 @@ export type RecipientDeliveryTypeResolvers<ContextType = any, ParentType extends
 
 export type ResourceScheduleResolvers<ContextType = any, ParentType extends ResolversParentTypes['ResourceSchedule'] = ResolversParentTypes['ResourceSchedule']> = {
   _id?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  available?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  booked?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
   bookings?: Resolver<Maybe<Array<Maybe<ResolversTypes['SimpleBookingTime']>>>, ParentType, ContextType>;
+  capacity?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
   categoryName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  name?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   resourceName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  space?: Resolver<Maybe<ResolversTypes['SpacesType']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -2567,6 +2719,7 @@ export type SignInNotificationRecipientResolvers<ContextType = any, ParentType e
 
 export type SignInNotificationsTypeResolvers<ContextType = any, ParentType extends ResolversParentTypes['SignInNotificationsType'] = ResolversParentTypes['SignInNotificationsType']> = {
   enabled?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
+  includeAllVisitorResponses?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   recipients?: Resolver<Maybe<Array<Maybe<ResolversTypes['SignInNotificationRecipient']>>>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
@@ -2602,8 +2755,25 @@ export type SignOutSettingsTypeResolvers<ContextType = any, ParentType extends R
 };
 
 export type SimpleBookingTimeResolvers<ContextType = any, ParentType extends ResolversParentTypes['SimpleBookingTime'] = ResolversParentTypes['SimpleBookingTime']> = {
+  _id?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  employeeId?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  employeeName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   end?: Resolver<Maybe<ResolversTypes['DateTime']>, ParentType, ContextType>;
+  people?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  spaceId?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  spaceName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   start?: Resolver<Maybe<ResolversTypes['DateTime']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type SpaceScheduleResolvers<ContextType = any, ParentType extends ResolversParentTypes['SpaceSchedule'] = ResolversParentTypes['SpaceSchedule']> = {
+  _id?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  availablePeople?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  bookedPeople?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  bookings?: Resolver<Maybe<Array<Maybe<ResolversTypes['SimpleBookingTime']>>>, ParentType, ContextType>;
+  capacity?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  name?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  resources?: Resolver<Maybe<Array<Maybe<ResolversTypes['SpacesResourceType']>>>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -2639,17 +2809,20 @@ export type SpacesResourceTypeResolvers<ContextType = any, ParentType extends Re
   capacity?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
   employees?: Resolver<Maybe<Array<Maybe<ResolversTypes['User']>>>, ParentType, ContextType>;
   features?: Resolver<Maybe<Array<Maybe<ResolversTypes['String']>>>, ParentType, ContextType>;
+  icon?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   location?: Resolver<Maybe<ResolversTypes['OfficeLocation']>, ParentType, ContextType>;
   name?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   notes?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   photo?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   resourceCategory?: Resolver<Maybe<ResolversTypes['SpacesCategoryType']>, ParentType, ContextType>;
   space?: Resolver<Maybe<ResolversTypes['SpacesType']>, ParentType, ContextType>;
+  spaces?: Resolver<Maybe<Array<Maybe<ResolversTypes['SpacesType']>>>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type SpacesTypeResolvers<ContextType = any, ParentType extends ResolversParentTypes['SpacesType'] = ResolversParentTypes['SpacesType']> = {
   _id?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  capacity?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
   location?: Resolver<Maybe<ResolversTypes['OfficeLocation']>, ParentType, ContextType>;
   name?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   resource?: Resolver<Maybe<Array<Maybe<ResolversTypes['SpacesResourceType']>>>, ParentType, ContextType>;
@@ -2662,14 +2835,19 @@ export type UserResolvers<ContextType = any, ParentType extends ResolversParentT
   createdAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   department?: Resolver<Maybe<ResolversTypes['Department']>, ParentType, ContextType>;
   email?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  email2?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   firstName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
   img?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   isArchived?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   lastName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   location?: Resolver<Maybe<ResolversTypes['OfficeLocation']>, ParentType, ContextType>;
+  needPasswordReset?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   notificationPreference?: Resolver<Maybe<Array<Maybe<ResolversTypes['String']>>>, ParentType, ContextType>;
   phone?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  phone2?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  phoneCountryCode?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  phoneCountryCode2?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   role?: Resolver<Maybe<ResolversTypes['RoleEnum']>, ParentType, ContextType>;
   timeline?: Resolver<Maybe<ResolversTypes['EmployeeTimeline']>, ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
@@ -2695,6 +2873,8 @@ export type VisitorResolvers<ContextType = any, ParentType extends ResolversPare
   category?: Resolver<Maybe<ResolversTypes['VisitorCategory']>, ParentType, ContextType>;
   data?: Resolver<Maybe<ResolversTypes['JSON']>, ParentType, ContextType>;
   department?: Resolver<Maybe<ResolversTypes['Department']>, ParentType, ContextType>;
+  deviceId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  deviceName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   employees?: Resolver<Maybe<Array<Maybe<ResolversTypes['User']>>>, ParentType, ContextType>;
   id?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
   img?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
@@ -2792,6 +2972,8 @@ export type Resolvers<ContextType = any> = {
   EmployeeTimeline?: EmployeeTimelineResolvers<ContextType>;
   EmployeeTimelineList?: EmployeeTimelineListResolvers<ContextType>;
   ErrorType?: ErrorTypeResolvers<ContextType>;
+  EvacuationList?: EvacuationListResolvers<ContextType>;
+  EvacuationPerson?: EvacuationPersonResolvers<ContextType>;
   Field?: FieldResolvers<ContextType>;
   GeneralDeliveryContactType?: GeneralDeliveryContactTypeResolvers<ContextType>;
   GeneralDeliveryInstType?: GeneralDeliveryInstTypeResolvers<ContextType>;
@@ -2825,6 +3007,7 @@ export type Resolvers<ContextType = any> = {
   SignOutMessage?: SignOutMessageResolvers<ContextType>;
   SignOutSettingsType?: SignOutSettingsTypeResolvers<ContextType>;
   SimpleBookingTime?: SimpleBookingTimeResolvers<ContextType>;
+  SpaceSchedule?: SpaceScheduleResolvers<ContextType>;
   SpacesCategoryPayload?: SpacesCategoryPayloadResolvers<ContextType>;
   SpacesCategoryType?: SpacesCategoryTypeResolvers<ContextType>;
   SpacesPaylaod?: SpacesPaylaodResolvers<ContextType>;

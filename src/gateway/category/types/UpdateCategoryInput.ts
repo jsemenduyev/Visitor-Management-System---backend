@@ -7,6 +7,7 @@ import {
   GraphQLID,
   GraphQLNonNull,
 } from "graphql";
+import { FieldOptionInput } from "./VisitorCategory";
 
 const UpdateFieldInput = new GraphQLInputObjectType({
   name: "UpdateFieldInput",
@@ -18,6 +19,7 @@ const UpdateFieldInput = new GraphQLInputObjectType({
     required: { type: GraphQLBoolean },
     priority: { type: GraphQLInt },
     clearResponseAfterEachVisit: { type: GraphQLBoolean },
+    options: { type: new GraphQLList(FieldOptionInput) },
   }),
 });
 

@@ -2,7 +2,14 @@ import visitorCategory from "../../../../database/models/visitorCategory";
 import { MutationUpdateFieldArgs } from "../../../generated/graphql";
 export default async (_: any, args: MutationUpdateFieldArgs) => {
   try {
-    const { categoryId, fieldId, required, enabled, clearResponseAfterEachVisit } = args;
+    const {
+      categoryId,
+      fieldId,
+      required,
+      enabled,
+      clearResponseAfterEachVisit,
+      options,
+    } = args;
 
     if (!categoryId || !fieldId) {
       throw new Error("CategoryId and FieldId are required");
@@ -36,6 +43,14 @@ export default async (_: any, args: MutationUpdateFieldArgs) => {
     }
     if (typeof clearResponseAfterEachVisit === "boolean") {
       category.fields[fieldIndex].clearResponseAfterEachVisit = clearResponseAfterEachVisit;
+    }
+    if (Array.isArray(options)) {
+      category.fields[fieldIndex].options = options
+        .filter((option) => option?.label?.trim() || option?.value?.trim())
+        .map((option) => ({
+          label: option?.label?.trim() || option?.value?.trim() || "",
+          value: option?.value?.trim() || option?.label?.trim() || "",
+        }));
     }
 
     // Save the category

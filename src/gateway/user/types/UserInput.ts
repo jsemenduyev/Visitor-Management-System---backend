@@ -12,8 +12,11 @@ export const UserInput = new GraphQLInputObjectType({
     firstName: { type: GraphQLString },
     lastName: { type: GraphQLString },
     email: { type: GraphQLString },
+    email2: { type: GraphQLString },
     phone: { type: GraphQLString },
     phoneCountryCode: { type: GraphQLString },
+    phone2: { type: GraphQLString },
+    phoneCountryCode2: { type: GraphQLString },
     password: { type: GraphQLString },
     role: { type: GraphQLString },
     company: {
