@@ -121,7 +121,10 @@ const init = async (): Promise<void> => {
   app.use("/", verifyUserRoute);
   app.use("/", visitUsRouter);
 
-  app.post("/api/upload", upload.single("file"), imgUpload);
+  const uploadRoutes = ["/upload", "/api/upload", "/api/api/upload"];
+  uploadRoutes.forEach((route) => {
+    app.post(route, upload.single("file"), imgUpload);
+  });
 
   app.get("/approveVisitor", async (req: Request, res: Response) => {
     try {
