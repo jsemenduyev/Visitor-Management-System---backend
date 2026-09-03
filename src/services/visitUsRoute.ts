@@ -13,6 +13,7 @@ import {
   getUserNotificationPhones,
 } from "../../utils/userNotificationContacts";
 import {
+  getDataObject,
   normalizeVisitorData,
   resolveVisitorFullName,
 } from "../../utils/visitorData";
@@ -94,6 +95,148 @@ const buildDepartmentFilter = (
   }
 
   return filter;
+};
+
+type VisitUsHostType = "department" | "admin" | "manager" | "employee";
+
+type VisitUsHostResult = {
+  _id: string;
+  name: string;
+  type: VisitUsHostType;
+  role?: string;
+  img?: string;
+};
+
+const normalizeHostType = (role?: string | null): VisitUsHostType => {
+  if (role === "admin") return "admin";
+  if (role === "manager") return "manager";
+  return "employee";
+};
+
+const buildVisitUsHostResults = async (
+  ctx: TokenLocationContext,
+  searchStr: string,
+): Promise<VisitUsHostResult[]> => {
+  const baseDeptFilter = {
+    company: ctx.location.company,
+    location: ctx.location._id,
+    createdBy: ctx.ownerId,
+  };
+  const searchLower = searchStr.toLowerCase();
+
+  const matchingDepartments = searchStr
+    ? await DepartmentModel.find(buildDepartmentFilter(ctx, searchStr))
+        .select("_id name")
+        .limit(30)
+        .lean()
+    : [];
+
+  const departmentsWithUsers = await DepartmentModel.find(baseDeptFilter)
+    .populate({
+      path: "user",
+      select: "firstName lastName img isArchived role",
+      match: { isArchived: { $ne: true } },
+    })
+    .select("_id name user")
+    .lean();
+
+  const hosts: VisitUsHostResult[] = [];
+  const seenPersonIds = new Set<string>();
+
+  for (const dept of matchingDepartments) {
+    hosts.push({
+      _id: String(dept._id),
+      name: dept.name || "",
+      type: "department",
+    });
+  }
+
+  const personMatchesSearch = (
+    firstName?: string | null,
+    lastName?: string | null,
+  ) => {
+    if (!searchStr) return true;
+    const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
+    return (
+      fullName.toLowerCase().includes(searchLower) ||
+      (firstName?.toLowerCase().includes(searchLower) ?? false) ||
+      (lastName?.toLowerCase().includes(searchLower) ?? false)
+    );
+  };
+
+  const addPersonHost = (person: {
+    _id: unknown;
+    firstName?: string | null;
+    lastName?: string | null;
+    img?: string | null;
+    role?: string | null;
+  }) => {
+    const personId = String(person._id);
+    if (seenPersonIds.has(personId)) return;
+    seenPersonIds.add(personId);
+
+    const fullName = [person.firstName, person.lastName]
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+    if (!fullName) return;
+
+    const hostType = normalizeHostType(person.role);
+    hosts.push({
+      _id: personId,
+      name: fullName,
+      type: hostType,
+      role: person.role || hostType,
+      img: person.img || "",
+    });
+  };
+
+  for (const dept of departmentsWithUsers) {
+    for (const user of dept.user || []) {
+      if (!user || typeof user !== "object" || !("_id" in user)) continue;
+      const person = user as {
+        _id: unknown;
+        firstName?: string | null;
+        lastName?: string | null;
+        img?: string | null;
+        role?: string | null;
+      };
+      if (!personMatchesSearch(person.firstName, person.lastName)) continue;
+      addPersonHost(person);
+    }
+  }
+
+  const directPersonFilter: Record<string, any> = {
+    company: ctx.location.company,
+    location: ctx.location._id,
+    isArchived: { $ne: true },
+    role: { $in: ["admin", "manager", "employee"] },
+    $and: [
+      {
+        $or: [{ createdBy: ctx.ownerId }, { _id: ctx.ownerId }],
+      },
+    ],
+  };
+  if (searchStr) {
+    directPersonFilter.$and.push({
+      $or: [
+        { firstName: { $regex: searchStr, $options: "i" } },
+        { lastName: { $regex: searchStr, $options: "i" } },
+      ],
+    });
+  }
+
+  const directPeople = await UserModel.find(directPersonFilter)
+    .select("_id firstName lastName img role")
+    .limit(30)
+    .lean();
+
+  for (const person of directPeople) {
+    if (!personMatchesSearch(person.firstName, person.lastName)) continue;
+    addPersonHost(person);
+  }
+
+  return hosts.slice(0, 30);
 };
 
 visitUsRouter.get("/verifyToken", async (req, res) => {
@@ -223,16 +366,77 @@ visitUsRouter.get("/departments", async (req, res) => {
     }
 
     const searchStr = typeof search === "string" ? search.trim() : "";
-    const scopedFilter = buildDepartmentFilter(ctx, searchStr);
+    const hosts = await buildVisitUsHostResults(ctx, searchStr);
 
-    const departments = await DepartmentModel.find(scopedFilter)
-      .select("_id name")
-      .limit(30)
-      .lean();
-
-    res.json(departments);
+    res.json(hosts);
   } catch (error) {
     console.error("Get Departments Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+visitUsRouter.get("/rememberedVisitors", async (req, res) => {
+  try {
+    const { token, search } = req.query;
+
+    if (!token) {
+      return res.status(400).json({ message: "Token is required" });
+    }
+
+    const ctx = await findLocationByToken(token);
+
+    if (!ctx) {
+      return res.status(401).json({ message: "Invalid token" });
+    }
+
+    const { location } = ctx;
+
+    if (!location.returningVisitors?.saveDetails) {
+      return res.json([]);
+    }
+
+    const searchStr = typeof search === "string" ? search.trim() : "";
+    if (searchStr.length < 2) {
+      return res.json([]);
+    }
+
+    let visitors = await VisitorModel.find({
+      company: location.company,
+      location: location._id,
+      remembered: true,
+      "data.fullName": { $regex: searchStr, $options: "i" },
+    })
+      .sort({ updatedAt: -1 })
+      .limit(50)
+      .select("data img")
+      .lean();
+
+    const seen = new Set<string>();
+    const results: Array<{
+      fullName: string;
+      data: Record<string, unknown>;
+      img?: string;
+    }> = [];
+
+    for (const visitor of visitors) {
+      const rawData = getDataObject(visitor.data);
+      const fullName = resolveVisitorFullName(rawData);
+      if (!fullName) continue;
+
+      const dedupeKey = fullName.toLowerCase();
+      if (seen.has(dedupeKey)) continue;
+      seen.add(dedupeKey);
+
+      results.push({
+        fullName,
+        data: normalizeVisitorData(rawData) || rawData,
+        img: visitor.img || undefined,
+      });
+    }
+
+    res.json(results);
+  } catch (error) {
+    console.error("Get Remembered Visitors Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });

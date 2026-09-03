@@ -8,6 +8,13 @@ import {
   maxConcurrentUnits,
 } from "../utils/overlapStats";
 
+const parseResourceCapacity = (raw: unknown): number | null => {
+  if (raw == null || raw === "") return null;
+  const numeric = Number(raw);
+  if (!Number.isFinite(numeric) || numeric <= 0) return null;
+  return numeric;
+};
+
 export default async (args: any, ctx: any) => {
   const { location, start, end, resourceCategory } = args;
   const company = ctx?.user?.company;
@@ -37,11 +44,11 @@ export default async (args: any, ctx: any) => {
   });
 
   return resources.map((resource: any) => {
-    const capacity =
-      typeof resource.capacity === "number" ? resource.capacity : 0;
+    const capacity = parseResourceCapacity(resource.capacity);
     const occupying = bookingsForResource(bookings, resource._id.toString());
     const booked = maxConcurrentUnits(occupying);
-    const available = Math.max(0, capacity - booked);
+    const available =
+      capacity == null ? null : Math.max(0, capacity - booked);
 
     return {
       _id: resource._id,

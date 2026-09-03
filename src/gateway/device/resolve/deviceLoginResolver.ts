@@ -1,17 +1,5 @@
 import DeviceModel from "../../../../database/models/devices";
 import crypto from "crypto";
-import fs from "fs";
-
-const debugLog = (payload: Record<string, unknown>) => {
-  try {
-    fs.appendFileSync(
-      "/home/nitish/Documents/GitHub/swiped/.cursor/debug-7e9727.log",
-      `${JSON.stringify({ sessionId: "7e9727", timestamp: Date.now(), ...payload })}\n`,
-    );
-  } catch {
-    /* ignore */
-  }
-};
 
 export default async (_, args) => {
   const { deviceId } = args;
@@ -19,21 +7,6 @@ export default async (_, args) => {
     typeof deviceId === "string" ? deviceId.trim().toUpperCase() : "";
   // generate new session key
   const newSessionKey = crypto.randomBytes(16).toString("hex");
-
-  const totalDevices = await DeviceModel.countDocuments();
-
-  debugLog({
-    location: "deviceLoginResolver.ts",
-    message: "deviceLogin lookup",
-    hypothesisId: "H2-H5",
-    data: {
-      rawLength: typeof deviceId === "string" ? deviceId.length : 0,
-      normalizedLength: normalizedDeviceId.length,
-      normalizedPrefix: normalizedDeviceId.slice(0, 2),
-      totalDevices,
-      runId: "post-fix",
-    },
-  });
 
   // replace session key (this logs out previous session automatically)
   const device = normalizedDeviceId
@@ -43,17 +16,6 @@ export default async (_, args) => {
         { new: true },
       )
     : null;
-
-  debugLog({
-    location: "deviceLoginResolver.ts",
-    message: "deviceLogin result",
-    hypothesisId: "H3-H4",
-    data: {
-      normalizedPrefix: normalizedDeviceId.slice(0, 2),
-      found: Boolean(device),
-      runId: "post-fix",
-    },
-  });
 
   if (!device) {
     return {
