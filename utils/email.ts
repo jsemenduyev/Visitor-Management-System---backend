@@ -13,7 +13,7 @@ const getMailConfig = () => {
   return { user, pass, ownerEmail: ownerEmail || user };
 };
 
-const getVerifyLink = (userId: string) => {
+export const getVerifyLink = (userId: string) => {
   const frontendUrl = (
     process.env.FRONTEND_URL ||
     process.env.CLIENT_URL ||

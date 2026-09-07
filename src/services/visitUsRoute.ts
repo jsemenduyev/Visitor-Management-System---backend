@@ -124,12 +124,13 @@ const buildVisitUsHostResults = async (
   };
   const searchLower = searchStr.toLowerCase();
 
-  const matchingDepartments = searchStr
-    ? await DepartmentModel.find(buildDepartmentFilter(ctx, searchStr))
-        .select("_id name")
-        .limit(30)
-        .lean()
-    : [];
+  // Empty search returns all location departments; non-empty filters by name.
+  const matchingDepartments = await DepartmentModel.find(
+    buildDepartmentFilter(ctx, searchStr),
+  )
+    .select("_id name")
+    .limit(30)
+    .lean();
 
   const departmentsWithUsers = await DepartmentModel.find(baseDeptFilter)
     .populate({

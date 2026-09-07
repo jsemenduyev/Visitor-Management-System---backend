@@ -10,6 +10,10 @@ const SpaceSchema = new Schema({
     type: Number,
     required: true,
   },
+  /** Cover image URL shown on space cards */
+  photo: {
+    type: String,
+  },
   resource: {
     type: Schema.Types.ObjectId,
     ref: "spaceresource",

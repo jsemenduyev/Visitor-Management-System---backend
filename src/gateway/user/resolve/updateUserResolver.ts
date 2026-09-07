@@ -7,6 +7,8 @@ import { MutationUpdateUserArgs } from "../../../generated/graphql";
 import { dashboardEmployeeFilter } from "../../utils/ownerScope";
 import { createHeadOfficeForAdmin } from "../../utils/locationOwnerScope";
 import { phonesAreDuplicate } from "../../../../utils/phoneValidation";
+import { sendTwilioMessage } from "../../../services/sendMessage";
+import { getUserNotificationPhones } from "../../../../utils/userNotificationContacts";
 
 const generateTempPassword = () =>
   crypto.randomBytes(5).toString("base64url").slice(0, 10);
@@ -110,20 +112,43 @@ export default async (args: MutationUpdateUserArgs, ctx) => {
       user.needPasswordReset = true;
       await user.save();
 
-      try {
-        const fullName =
-          `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || "User";
-        await sendTemporaryPasswordEmail(fullName, user.email, tempPassword);
-      } catch (emailError) {
-        console.error("Failed to send one-time password email:", emailError);
-        return {
-          user,
-          error: {
-            message:
-              "Role updated but one-time password email could not be sent. Please contact support.",
-            code: "EMAIL_SEND_FAILED",
-          },
-        };
+      const fullName =
+        `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || "User";
+      const prefs = user.notificationPreference || [];
+      const emailPrefChecked =
+        !Array.isArray(prefs) ||
+        prefs.length === 0 ||
+        prefs.includes("Email");
+      const smsPrefChecked = Array.isArray(prefs) && prefs.includes("SMS");
+
+      if (emailPrefChecked) {
+        try {
+          await sendTemporaryPasswordEmail(fullName, user.email, tempPassword);
+        } catch (emailError) {
+          console.error("Failed to send one-time password email:", emailError);
+          return {
+            user,
+            error: {
+              message:
+                "Role updated but one-time password email could not be sent. Please contact support.",
+              code: "EMAIL_SEND_FAILED",
+            },
+          };
+        }
+      }
+
+      if (smsPrefChecked) {
+        try {
+          const phones = getUserNotificationPhones(user);
+          if (phones.length > 0) {
+            const smsMessage = `Maximal Security: Hello ${fullName}. Your temporary password is: ${tempPassword}. Sign in and set a new password.`;
+            await Promise.allSettled(
+              phones.map((phone) => sendTwilioMessage(phone, smsMessage)),
+            );
+          }
+        } catch (smsError) {
+          console.error("Failed to send one-time password SMS:", smsError);
+        }
       }
     } else {
       await user.save();

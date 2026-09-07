@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { CompanyModel } from "../../../../database/models/company";
 import { UserModel } from "../../../../database/models/user";
 import {
+  getVerifyLink,
   sendEmployeeWelcomeEmail,
   sendEmployeeWelcomeOnlyEmail,
 } from "../../../../utils/email";
@@ -124,19 +125,48 @@ export default async (args: MutationCreateUserArgs, ctx: any) => {
       `${createdEmployee.firstName ?? ""} ${createdEmployee.lastName ?? ""}`.trim() ||
       "User";
 
-    try {
-      if (requiresWebsiteAccess && tempPassword) {
-        await sendEmployeeWelcomeEmail(
-          createdEmployee._id.toString(),
-          fullName,
-          createdEmployee.email,
-          tempPassword,
-        );
-      } else {
-        await sendEmployeeWelcomeOnlyEmail(fullName, createdEmployee.email);
+    const prefs = createdEmployee.notificationPreference || [];
+    const emailPrefChecked =
+      !Array.isArray(prefs) ||
+      prefs.length === 0 ||
+      prefs.includes("Email");
+    const smsPrefChecked = Array.isArray(prefs) && prefs.includes("SMS");
+
+    let emailFailed = false;
+    if (emailPrefChecked) {
+      try {
+        if (requiresWebsiteAccess && tempPassword) {
+          await sendEmployeeWelcomeEmail(
+            createdEmployee._id.toString(),
+            fullName,
+            createdEmployee.email,
+            tempPassword,
+          );
+        } else {
+          await sendEmployeeWelcomeOnlyEmail(fullName, createdEmployee.email);
+        }
+      } catch (emailError) {
+        emailFailed = true;
+        console.error("Failed to send employee welcome email:", emailError);
       }
-    } catch (emailError) {
-      console.error("Failed to send employee welcome email:", emailError);
+    }
+
+    try {
+      const phones = getUserNotificationPhones(createdEmployee);
+      if (smsPrefChecked && phones.length > 0) {
+        const smsMessage =
+          requiresWebsiteAccess && tempPassword
+            ? `Maximal Security: Hello ${fullName}. Temp password: ${tempPassword}. Verify then sign in: ${getVerifyLink(createdEmployee._id.toString())}`
+            : `Hello ${fullName}, welcome to Maximal Security! Your employee profile has been successfully created.`;
+        await Promise.allSettled(
+          phones.map((phone) => sendTwilioMessage(phone, smsMessage)),
+        );
+      }
+    } catch (smsError) {
+      console.error("Failed to send employee welcome SMS:", smsError);
+    }
+
+    if (emailFailed) {
       return {
         user: createdEmployee,
         error: {
@@ -145,18 +175,6 @@ export default async (args: MutationCreateUserArgs, ctx: any) => {
           code: "EMAIL_SEND_FAILED",
         },
       };
-    }
-
-    try {
-      const phones = getUserNotificationPhones(createdEmployee);
-      if (phones.length > 0) {
-        const smsMessage = `Hello ${fullName}, welcome to Maximal Security! Your employee profile has been successfully created.`;
-        await Promise.allSettled(
-          phones.map((phone) => sendTwilioMessage(phone, smsMessage)),
-        );
-      }
-    } catch (smsError) {
-      console.error("Failed to send employee welcome SMS:", smsError);
     }
 
     return {

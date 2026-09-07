@@ -7,13 +7,46 @@ import {
   findOverlappingBookings,
   maxConcurrentUnits,
 } from "../utils/overlapStats";
-import { resourceLinkedToSpaceFilter } from "../utils/syncSpaceResources";
 
 const parseResourceCapacity = (raw: unknown): number | null => {
   if (raw == null || raw === "") return null;
   const numeric = Number(raw);
   if (!Number.isFinite(numeric) || numeric <= 0) return null;
   return numeric;
+};
+
+const bookingSpaceId = (booking: any): string | null => {
+  if (!booking?.space) return null;
+  return booking.space._id
+    ? String(booking.space._id)
+    : String(booking.space);
+};
+
+const resourceAttachedSpaceIds = (resource: any): string[] => {
+  const ids = new Set<string>();
+  if (resource?.space) {
+    ids.add(
+      resource.space._id
+        ? String(resource.space._id)
+        : String(resource.space)
+    );
+  }
+  for (const s of resource?.spaces ?? []) {
+    if (!s) continue;
+    ids.add(s._id ? String(s._id) : String(s));
+  }
+  return [...ids];
+};
+
+/** Match booking.space, or null-place bookings that display under the resource's attached space. */
+const bookingMatchesSpaceFilter = (
+  booking: any,
+  spaceFilter: string,
+  resource: any
+) => {
+  const sid = bookingSpaceId(booking);
+  if (sid) return sid === spaceFilter;
+  return resourceAttachedSpaceIds(resource).includes(spaceFilter);
 };
 
 export default async (args: any, ctx: any) => {
@@ -29,10 +62,8 @@ export default async (args: any, ctx: any) => {
     return [];
   }
 
+  // Space filter applies to bookings only — always list all resources for the location.
   const query: any = { location };
-  if (space) {
-    Object.assign(query, resourceLinkedToSpaceFilter(space));
-  }
   if (resourceCategory) query.resourceCategory = resourceCategory;
 
   const resources = await SpaceResourceModel.find(query)
@@ -53,10 +84,17 @@ export default async (args: any, ctx: any) => {
     createdBy: ctx.user._id,
   });
 
+  const spaceFilter = space ? String(space) : null;
+
   return resources.map((resource: any) => {
     const capacity = parseResourceCapacity(resource.capacity);
     const occupying = bookingsForResource(bookings, resource._id.toString());
-    const booked = maxConcurrentUnits(occupying);
+    const visible = spaceFilter
+      ? occupying.filter((b: any) =>
+          bookingMatchesSpaceFilter(b, spaceFilter, resource)
+        )
+      : occupying;
+    const booked = maxConcurrentUnits(visible);
     const available =
       capacity == null ? null : Math.max(0, capacity - booked);
 
@@ -71,7 +109,7 @@ export default async (args: any, ctx: any) => {
       capacity,
       booked,
       available,
-      bookings: occupying.map((b: any) => ({
+      bookings: visible.map((b: any) => ({
         _id: b._id,
         start: b.start,
         end: b.end,

@@ -22,6 +22,9 @@ export const Spaces = new GraphQLObjectType({
     capacity: {
       type: GraphQLInt,
     },
+    photo: {
+      type: GraphQLString,
+    },
     resource: {
       type: new GraphQLList(SpacesResource),
     },
@@ -50,6 +53,9 @@ export const SpacesInput = new GraphQLInputObjectType({
     },
     capacity: {
       type: GraphQLInt,
+    },
+    photo: {
+      type: GraphQLString,
     },
     resource: {
       type: GraphQLString,
