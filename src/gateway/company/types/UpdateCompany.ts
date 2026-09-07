@@ -252,6 +252,20 @@ const VisitorButtonInput = new GraphQLInputObjectType({
   }),
 });
 
+const WelcomeScreenInput = new GraphQLInputObjectType({
+  name: "WelcomeScreenInput",
+  fields: () => ({
+    brandText: { type: GraphQLString },
+    brandFontSize: { type: GraphQLInt },
+    brandTopDistance: { type: GraphQLInt },
+    brandAlign: { type: GraphQLString },
+    welcomeText: { type: GraphQLString },
+    welcomeFontSize: { type: GraphQLInt },
+    welcomeTopDistance: { type: GraphQLInt },
+    welcomeAlign: { type: GraphQLString },
+  }),
+});
+
 const ContactLessInput = new GraphQLInputObjectType({
   name: "ContactLessInput",
   fields: () => ({
@@ -315,6 +329,9 @@ export const UpdateCompanyInput = new GraphQLInputObjectType({
     },
     visitorButton: {
       type: VisitorButtonInput,
+    },
+    welcomeScreen: {
+      type: WelcomeScreenInput,
     },
     contactLess: {
       type: ContactLessInput,

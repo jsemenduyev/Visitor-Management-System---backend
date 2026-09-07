@@ -17,6 +17,7 @@ import {
   SignInNotificationsType,
   SignOutSettingsType,
   VisitorButton,
+  WelcomeScreen,
 } from "../../company/types/CompanyType";
 import { DeviceType } from "../../device/types/Device";
 import DeviceModel from "../../../../database/models/devices";
@@ -93,6 +94,9 @@ export const OfficeLocation = new GraphQLObjectType({
     },
     visitorButton: {
       type: VisitorButton,
+    },
+    welcomeScreen: {
+      type: WelcomeScreen,
     },
     contactLess: {
       type: ContactLess,

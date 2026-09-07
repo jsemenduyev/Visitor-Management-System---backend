@@ -13,21 +13,11 @@ export default async (args: MutationUpdateCompanyArgs, ctx: any) => {
 
     const companyId = ctx?.user?.company;
     if (!companyId) {
-      return {
-        error: {
-          message: "User does not belong to any company",
-          code: "NO_COMPANY_FOUND",
-        },
-      };
+      throw new Error("User does not belong to any company");
     }
 
     if (!input || Object.keys(input).length === 0) {
-      return {
-        error: {
-          message: "No input data provided for update",
-          code: "EMPTY_INPUT",
-        },
-      };
+      throw new Error("No input data provided for update");
     }
     const existing = await OfficeLocationModel.findOne({
       _id: input.locationId,
@@ -36,9 +26,7 @@ export default async (args: MutationUpdateCompanyArgs, ctx: any) => {
     }).select("+settingsByAdmin");
 
     if (!existing) {
-      return {
-        error: { message: "Location not found", code: "NOT_FOUND" },
-      };
+      throw new Error("Location not found");
     }
 
     let newInput: Record<string, any> = { ...input };
@@ -75,24 +63,15 @@ export default async (args: MutationUpdateCompanyArgs, ctx: any) => {
       ).lean();
 
       if (!updatedLocation) {
-        return {
-          error: {
-            message: "Location not found",
-            code: "NOT_FOUND",
-          },
-        };
+        throw new Error("Location not found");
       }
     }
 
     return "Location data updated successfully";
   } catch (error: any) {
     console.error("Error updating location:", error);
-    return {
-      error: {
-        message:
-          error.message || "Something went wrong while updating location",
-        code: "SERVER_ERROR",
-      },
-    };
+    throw new Error(
+      error.message || "Something went wrong while updating location",
+    );
   }
 };

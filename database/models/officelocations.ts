@@ -317,6 +317,34 @@ const OfficeLocationSchema = new Schema(
         type: String,
       },
     },
+    welcomeScreen: {
+      brandText: {
+        type: String,
+      },
+      brandFontSize: {
+        type: Number,
+      },
+      brandTopDistance: {
+        type: Number,
+      },
+      brandAlign: {
+        type: String,
+        enum: ["left", "center", "right"],
+      },
+      welcomeText: {
+        type: String,
+      },
+      welcomeFontSize: {
+        type: Number,
+      },
+      welcomeTopDistance: {
+        type: Number,
+      },
+      welcomeAlign: {
+        type: String,
+        enum: ["left", "center", "right"],
+      },
+    },
     contactLess: {
       token: {
         type: String,

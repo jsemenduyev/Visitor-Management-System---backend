@@ -194,6 +194,20 @@ export const VisitorButton = new GraphQLObjectType({
     buttonBg: { type: GraphQLString },
   }),
 });
+
+export const WelcomeScreen = new GraphQLObjectType({
+  name: "WelcomeScreen",
+  fields: () => ({
+    brandText: { type: GraphQLString },
+    brandFontSize: { type: GraphQLInt },
+    brandTopDistance: { type: GraphQLInt },
+    brandAlign: { type: GraphQLString },
+    welcomeText: { type: GraphQLString },
+    welcomeFontSize: { type: GraphQLInt },
+    welcomeTopDistance: { type: GraphQLInt },
+    welcomeAlign: { type: GraphQLString },
+  }),
+});
 export const ContactLess = new GraphQLObjectType({
   name: "ContactLess",
   fields: () => ({

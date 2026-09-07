@@ -44,6 +44,31 @@ const allowedOrigins = [
   ...new Set([...defaultAllowedOrigins, ...configuredAllowedOrigins]),
 ];
 
+/** Private LAN hosts used when opening the Next app via Network URL (not localhost). */
+const isLocalNetworkOrigin = (origin: string): boolean => {
+  try {
+    const url = new URL(origin);
+    if (!["http:", "https:"].includes(url.protocol)) return false;
+    const host = url.hostname;
+    if (host === "localhost" || host === "127.0.0.1") return true;
+    // 10.x.x.x, 192.168.x.x, 172.16-31.x.x
+    if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host)) return true;
+    if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(host)) return true;
+    if (
+      /^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(host)
+    ) {
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+};
+
+const allowLocalNetworkCors =
+  process.env.NODE_ENV !== "production" ||
+  process.env.ALLOW_LOCAL_NETWORK_CORS === "true";
+
 console.log("Allowed CORS origins:", allowedOrigins);
 const corsOptions: CorsOptions = {
   origin: (origin, callback) => {
@@ -54,6 +79,10 @@ const corsOptions: CorsOptions = {
 
     const normalized = origin.replace(/\/$/, "");
     if (allowedOrigins.includes(normalized)) {
+      return callback(null, true);
+    }
+
+    if (allowLocalNetworkCors && isLocalNetworkOrigin(normalized)) {
       return callback(null, true);
     }
 

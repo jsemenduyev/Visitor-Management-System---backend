@@ -936,6 +936,7 @@ export type OfficeLocation = {
   signOutSettings?: Maybe<SignOutSettingsType>;
   visitorButton?: Maybe<VisitorButton>;
   visitorPhoto?: Maybe<Scalars['Boolean']['output']>;
+  welcomeScreen?: Maybe<WelcomeScreen>;
 };
 
 export type PreRegisterInput = {
@@ -1552,6 +1553,7 @@ export type UpdateCompanyInput = {
   signOutSettings?: InputMaybe<SignOutSettingsInput>;
   visitorButton?: InputMaybe<VisitorButtonInput>;
   visitorPhoto?: InputMaybe<Scalars['Boolean']['input']>;
+  welcomeScreen?: InputMaybe<WelcomeScreenInput>;
 };
 
 export type UpdateDeliveryInput = {
@@ -1730,6 +1732,29 @@ export type VisitorButtonInput = {
   buttonBg?: InputMaybe<Scalars['String']['input']>;
   buttonColor?: InputMaybe<Scalars['String']['input']>;
   buttonRadius?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type WelcomeScreen = {
+  __typename?: 'WelcomeScreen';
+  brandAlign?: Maybe<Scalars['String']['output']>;
+  brandFontSize?: Maybe<Scalars['Int']['output']>;
+  brandText?: Maybe<Scalars['String']['output']>;
+  brandTopDistance?: Maybe<Scalars['Int']['output']>;
+  welcomeAlign?: Maybe<Scalars['String']['output']>;
+  welcomeFontSize?: Maybe<Scalars['Int']['output']>;
+  welcomeText?: Maybe<Scalars['String']['output']>;
+  welcomeTopDistance?: Maybe<Scalars['Int']['output']>;
+};
+
+export type WelcomeScreenInput = {
+  brandAlign?: InputMaybe<Scalars['String']['input']>;
+  brandFontSize?: InputMaybe<Scalars['Int']['input']>;
+  brandText?: InputMaybe<Scalars['String']['input']>;
+  brandTopDistance?: InputMaybe<Scalars['Int']['input']>;
+  welcomeAlign?: InputMaybe<Scalars['String']['input']>;
+  welcomeFontSize?: InputMaybe<Scalars['Int']['input']>;
+  welcomeText?: InputMaybe<Scalars['String']['input']>;
+  welcomeTopDistance?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type VisitorCategory = {
