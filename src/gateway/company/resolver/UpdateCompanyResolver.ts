@@ -33,24 +33,52 @@ export default async (args: MutationUpdateCompanyArgs, ctx: any) => {
     // Don't persist GraphQL helper field onto the location document
     delete newInput.locationId;
 
+    // Omit null/undefined keys so a partial update (e.g. welcomeScreen only)
+    // cannot wipe sibling settings like contactLess via mergeSettings.
+    for (const key of Object.keys(newInput)) {
+      if (newInput[key] === null || newInput[key] === undefined) {
+        delete newInput[key];
+      }
+    }
+
     const authUser = ctx?.user;
     const existingSettings = getAdminLocationSettings(existing, authUser._id);
 
-    if (input.contactLess?.enabled) {
-      const token =
-        existingSettings?.contactLess?.token ||
-        existing?.contactLess?.token ||
-        crypto.randomBytes(16).toString("hex");
-      const { qrCode } = await buildContactLessQr(token);
+    if (input.contactLess && typeof input.contactLess.enabled === "boolean") {
+      if (input.contactLess.enabled) {
+        const token =
+          existingSettings?.contactLess?.token ||
+          existing?.contactLess?.token ||
+          input.contactLess.token ||
+          crypto.randomBytes(16).toString("hex");
+        const { qrCode } = await buildContactLessQr(token);
 
-      newInput = {
-        ...newInput,
-        contactLess: {
-          token,
-          qrCode,
-          enabled: true,
-        },
-      };
+        newInput = {
+          ...newInput,
+          contactLess: {
+            token,
+            qrCode,
+            enabled: true,
+          },
+        };
+      } else {
+        newInput = {
+          ...newInput,
+          contactLess: {
+            token:
+              input.contactLess.token ||
+              existingSettings?.contactLess?.token ||
+              existing?.contactLess?.token ||
+              undefined,
+            qrCode:
+              input.contactLess.qrCode ||
+              existingSettings?.contactLess?.qrCode ||
+              existing?.contactLess?.qrCode ||
+              undefined,
+            enabled: false,
+          },
+        };
+      }
     }
 
     if (Object.keys(newInput).length > 0) {
