@@ -318,6 +318,10 @@ const OfficeLocationSchema = new Schema(
       },
     },
     welcomeScreen: {
+      brandEnabled: {
+        type: Boolean,
+        default: true,
+      },
       brandText: {
         type: String,
       },
@@ -330,6 +334,10 @@ const OfficeLocationSchema = new Schema(
       brandAlign: {
         type: String,
         enum: ["left", "center", "right"],
+      },
+      welcomeEnabled: {
+        type: Boolean,
+        default: true,
       },
       welcomeText: {
         type: String,

@@ -1737,10 +1737,12 @@ export type VisitorButtonInput = {
 export type WelcomeScreen = {
   __typename?: 'WelcomeScreen';
   brandAlign?: Maybe<Scalars['String']['output']>;
+  brandEnabled?: Maybe<Scalars['Boolean']['output']>;
   brandFontSize?: Maybe<Scalars['Int']['output']>;
   brandText?: Maybe<Scalars['String']['output']>;
   brandTopDistance?: Maybe<Scalars['Int']['output']>;
   welcomeAlign?: Maybe<Scalars['String']['output']>;
+  welcomeEnabled?: Maybe<Scalars['Boolean']['output']>;
   welcomeFontSize?: Maybe<Scalars['Int']['output']>;
   welcomeText?: Maybe<Scalars['String']['output']>;
   welcomeTopDistance?: Maybe<Scalars['Int']['output']>;
@@ -1748,10 +1750,12 @@ export type WelcomeScreen = {
 
 export type WelcomeScreenInput = {
   brandAlign?: InputMaybe<Scalars['String']['input']>;
+  brandEnabled?: InputMaybe<Scalars['Boolean']['input']>;
   brandFontSize?: InputMaybe<Scalars['Int']['input']>;
   brandText?: InputMaybe<Scalars['String']['input']>;
   brandTopDistance?: InputMaybe<Scalars['Int']['input']>;
   welcomeAlign?: InputMaybe<Scalars['String']['input']>;
+  welcomeEnabled?: InputMaybe<Scalars['Boolean']['input']>;
   welcomeFontSize?: InputMaybe<Scalars['Int']['input']>;
   welcomeText?: InputMaybe<Scalars['String']['input']>;
   welcomeTopDistance?: InputMaybe<Scalars['Int']['input']>;

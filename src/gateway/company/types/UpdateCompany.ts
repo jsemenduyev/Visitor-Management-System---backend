@@ -255,10 +255,12 @@ const VisitorButtonInput = new GraphQLInputObjectType({
 const WelcomeScreenInput = new GraphQLInputObjectType({
   name: "WelcomeScreenInput",
   fields: () => ({
+    brandEnabled: { type: GraphQLBoolean },
     brandText: { type: GraphQLString },
     brandFontSize: { type: GraphQLInt },
     brandTopDistance: { type: GraphQLInt },
     brandAlign: { type: GraphQLString },
+    welcomeEnabled: { type: GraphQLBoolean },
     welcomeText: { type: GraphQLString },
     welcomeFontSize: { type: GraphQLInt },
     welcomeTopDistance: { type: GraphQLInt },

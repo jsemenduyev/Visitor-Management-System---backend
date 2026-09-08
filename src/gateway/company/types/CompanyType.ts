@@ -198,10 +198,12 @@ export const VisitorButton = new GraphQLObjectType({
 export const WelcomeScreen = new GraphQLObjectType({
   name: "WelcomeScreen",
   fields: () => ({
+    brandEnabled: { type: GraphQLBoolean },
     brandText: { type: GraphQLString },
     brandFontSize: { type: GraphQLInt },
     brandTopDistance: { type: GraphQLInt },
     brandAlign: { type: GraphQLString },
+    welcomeEnabled: { type: GraphQLBoolean },
     welcomeText: { type: GraphQLString },
     welcomeFontSize: { type: GraphQLInt },
     welcomeTopDistance: { type: GraphQLInt },
