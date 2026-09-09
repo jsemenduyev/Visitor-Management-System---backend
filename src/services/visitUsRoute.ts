@@ -43,41 +43,68 @@ const findLocationByToken = async (
 ): Promise<TokenLocationContext | null> => {
   if (!token || typeof token !== "string") return null;
 
-  const topLevel = await OfficeLocationModel.findOne({
-    "contactLess.token": token,
-    "contactLess.enabled": true,
-  })
-    .select("+settingsByAdmin")
-    .lean();
-
-  if (topLevel) {
-    return {
-      location: locationForAdmin(topLevel as any, topLevel.createdBy),
-      ownerId: String(topLevel.createdBy),
-    };
-  }
-
+  // Admin-scoped QR settings are authoritative. Check them before the legacy
+  // top-level contactLess value; otherwise a reused legacy token can resolve
+  // to the location owner and leak that admin's branding into another admin's
+  // visitor flow.
   const candidates = await OfficeLocationModel.find({
     settingsByAdmin: { $exists: true, $ne: {} },
   })
     .select("+settingsByAdmin")
     .lean();
 
+  const scopedMatches: TokenLocationContext[] = [];
   for (const location of candidates) {
     for (const [adminId, adminSettings] of iterSettingsByAdmin(
       location.settingsByAdmin,
     )) {
       const contactLess = adminSettings?.contactLess;
       if (contactLess?.token === token && contactLess?.enabled) {
-        return {
+        scopedMatches.push({
           location: locationForAdmin(location as any, adminId),
           ownerId: adminId,
-        };
+        });
       }
     }
   }
 
-  return null;
+  if (scopedMatches.length === 1) return scopedMatches[0];
+  if (scopedMatches.length > 1) {
+    console.error("Ambiguous admin-scoped visit-us token", {
+      tokenSuffix: token.slice(-6),
+      matches: scopedMatches.length,
+    });
+    return null;
+  }
+
+  // Fall back only for old locations whose QR configuration predates
+  // settingsByAdmin.
+  const topLevelMatches = await OfficeLocationModel.find({
+    "contactLess.token": token,
+    "contactLess.enabled": true,
+  })
+    .select("+settingsByAdmin")
+    .limit(2)
+    .lean();
+
+  if (topLevelMatches.length !== 1) {
+    if (topLevelMatches.length > 1) {
+      console.error("Ambiguous legacy visit-us token", {
+        tokenSuffix: token.slice(-6),
+        matches: topLevelMatches.length,
+      });
+    }
+    return null;
+  }
+
+  const topLevel = topLevelMatches[0];
+  if (!topLevel.createdBy) return null;
+
+  return {
+    location: locationForAdmin(topLevel as any, topLevel.createdBy),
+    ownerId: String(topLevel.createdBy),
+  };
+
 };
 
 const buildDepartmentFilter = (
