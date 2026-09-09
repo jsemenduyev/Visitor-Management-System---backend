@@ -35,8 +35,14 @@ export default async (args: MutationUpdateCompanyArgs, ctx: any) => {
 
     // Omit null/undefined keys so a partial update (e.g. welcomeScreen only)
     // cannot wipe sibling settings like contactLess via mergeSettings.
+    // selectedAgreement is the exception: an explicit null means the admin
+    // removed the agreement. It must be stored as an override so that
+    // locationForAdmin does not fall back to the location-level default.
     for (const key of Object.keys(newInput)) {
-      if (newInput[key] === null || newInput[key] === undefined) {
+      if (
+        (newInput[key] === null || newInput[key] === undefined) &&
+        !(key === "selectedAgreement" && newInput[key] === null)
+      ) {
         delete newInput[key];
       }
     }
