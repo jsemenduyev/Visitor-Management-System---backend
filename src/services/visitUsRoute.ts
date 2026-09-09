@@ -163,19 +163,29 @@ const buildVisitUsHostResults = async (
     .populate({
       path: "user",
       select: "firstName lastName img isArchived role",
-      match: { isArchived: { $ne: true } },
+      match: {
+        isArchived: { $ne: true },
+        $or: [{ createdBy: ctx.ownerId }, { _id: ctx.ownerId }],
+      },
     })
     .select("_id name user")
     .lean();
 
   const hosts: VisitUsHostResult[] = [];
   const seenPersonIds = new Set<string>();
+  const departmentImages = new Map(
+    departmentsWithUsers.map((department) => [
+      String(department._id),
+      ((department.user || []) as any[]).find((user) => user?.img)?.img || "",
+    ]),
+  );
 
   for (const dept of matchingDepartments) {
     hosts.push({
       _id: String(dept._id),
       name: dept.name || "",
       type: "department",
+      img: departmentImages.get(String(dept._id)) || "",
     });
   }
 
