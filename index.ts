@@ -78,7 +78,8 @@ const corsOptions: CorsOptions = {
     }
 
     const normalized = origin.replace(/\/$/, "");
-    if (allowedOrigins.includes(normalized)) {
+
+    if (allowedOrigins.includes(normalized) || /\.vercel\.app$/.test(normalized)) {
       return callback(null, true);
     }
 
